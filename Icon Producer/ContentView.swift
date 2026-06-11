@@ -4,31 +4,58 @@
 //
 //  Created by Michael Fluharty on 6/9/26.
 //
-//  Editor SHELL increment: a square canvas + the layer list, driven by the
-//  IconDocument model. No tools/inspectors/persistence yet — this just renders
-//  the layer stack so there is something real on screen. A brand-new icon opens
-//  with three BLANK layers (Light Background, Dark Background, Icon), so the
-//  canvas shows the transparency checkerboard until the user fills/draws.
+//  Editor SHELL: a square canvas + the layer list, driven by the IconDocument
+//  model. No tools/inspectors/persistence yet. A brand-new icon opens with three
+//  BLANK layers (Light Background, Dark Background, Icon), so the canvas shows the
+//  transparency checkerboard until the user fills/draws.
+//
+//  LAYOUT (Michael 2026-06-11): adapts to orientation by geometry, not size class
+//  (iPhone landscape still reports "compact" width, so size class would miss it).
+//   • PORTRAIT (taller than wide — the common iPhone case): canvas = TOP half,
+//     layers = BOTTOM half. The canvas gets the full width instead of being
+//     squished into a side column.
+//   • LANDSCAPE / WIDE (Mac, iPad): the original side-by-side, left as-is.
+//
+//  LAYER ROWS (Michael 2026-06-11): no "blank" label (the badge already shows an
+//  empty layer). Names are renamable (context-menu → Rename). Layers are moveable
+//  (drag to reorder). The eyeball (visibility) and a grab bar (the reorder handle)
+//  sit on the trailing edge where "blank" used to be.
 //
 
 import SwiftUI
 
 struct ContentView: View {
     @State private var document = IconDocument.newDefault()
-    @State private var selectedLayerID: IconLayer.ID?
 
     var body: some View {
-        HStack(spacing: 0) {
-            CanvasView(document: document)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding()
-                .background(Color(white: 0.5).opacity(0.12))
-
-            Divider()
-
-            LayerPanel(document: document, selectedLayerID: $selectedLayerID)
-                .frame(width: 280)
+        GeometryReader { geo in
+            if geo.size.height > geo.size.width {
+                // Portrait: canvas top half, layers bottom half.
+                VStack(spacing: 0) {
+                    canvasArea
+                        .frame(height: geo.size.height / 2)
+                    Divider()
+                    LayerPanel(document: document)
+                        .frame(height: geo.size.height / 2)
+                }
+            } else {
+                // Landscape / wide (Mac, iPad): original side-by-side, unchanged.
+                HStack(spacing: 0) {
+                    canvasArea
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    Divider()
+                    LayerPanel(document: document)
+                        .frame(width: 280)
+                }
+            }
         }
+    }
+
+    private var canvasArea: some View {
+        CanvasView(document: document)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding()
+            .background(Color(white: 0.5).opacity(0.12))
     }
 }
 
@@ -95,10 +122,13 @@ struct Checkerboard: View {
 // MARK: - Layer panel
 
 /// The layer list. Shown TOP-of-stack first (the array is bottom-to-top, so the
-/// display is reversed). Each row: eyeball (visibility) + kind badge + name.
+/// display is reversed). Each row: kind badge + editable name + (eyeball / grab
+/// bar) on the trailing edge. Reorder is always-on (edit mode active); rename is
+/// via the row's context menu so it never fights the drag handle.
 struct LayerPanel: View {
     let document: IconDocument
-    @Binding var selectedLayerID: IconLayer.ID?
+    @State private var renamingID: IconLayer.ID?
+    @State private var draftName = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -107,14 +137,42 @@ struct LayerPanel: View {
                 .padding(.horizontal)
                 .padding(.vertical, 10)
             Divider()
-            List(selection: $selectedLayerID) {
+            List {
                 ForEach(Array(document.layers.reversed())) { layer in
-                    LayerRow(layer: layer) { toggleVisibility(layer.id) }
-                        .tag(layer.id)
+                    LayerRow(
+                        layer: layer,
+                        onToggleVisibility: { toggleVisibility(layer.id) },
+                        onRename: { beginRename(layer) }
+                    )
                 }
+                .onMove(perform: move)
             }
             .listStyle(.plain)
+            .environment(\.editMode, .constant(.active)) // always-on reorder handles
         }
+        .alert("Rename Layer", isPresented: isRenaming) {
+            TextField("Name", text: $draftName)
+            Button("Cancel", role: .cancel) { renamingID = nil }
+            Button("Rename") { commitRename() }
+        }
+    }
+
+    private var isRenaming: Binding<Bool> {
+        Binding(get: { renamingID != nil },
+                set: { if !$0 { renamingID = nil } })
+    }
+
+    private func beginRename(_ layer: IconLayer) {
+        draftName = layer.name
+        renamingID = layer.id
+    }
+
+    private func commitRename() {
+        defer { renamingID = nil }
+        guard let id = renamingID,
+              let index = document.layers.firstIndex(where: { $0.id == id }) else { return }
+        let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { document.layers[index].name = trimmed }
     }
 
     private func toggleVisibility(_ id: IconLayer.ID) {
@@ -122,20 +180,23 @@ struct LayerPanel: View {
             document.layers[index].isVisible.toggle()
         }
     }
+
+    /// The list shows the stack reversed (top-first), so reorder in that reversed
+    /// space and write the un-reversed result back to the bottom-to-top array.
+    private func move(from source: IndexSet, to destination: Int) {
+        var topFirst = Array(document.layers.reversed())
+        topFirst.move(fromOffsets: source, toOffset: destination)
+        document.layers = topFirst.reversed()
+    }
 }
 
 struct LayerRow: View {
     let layer: IconLayer
     let onToggleVisibility: () -> Void
+    let onRename: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
-            Button(action: onToggleVisibility) {
-                Image(systemName: layer.isVisible ? "eye" : "eye.slash")
-                    .foregroundStyle(layer.isVisible ? Color.primary : Color.secondary)
-            }
-            .buttonStyle(.plain)
-
             Image(systemName: layer.displaySymbolName)
                 .frame(width: 18)
                 .foregroundStyle(.secondary)
@@ -145,14 +206,19 @@ struct LayerRow: View {
 
             Spacer()
 
-            if layer.isBlank {
-                Text("blank")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+            Button(action: onToggleVisibility) {
+                Image(systemName: layer.isVisible ? "eye" : "eye.slash")
+                    .foregroundStyle(layer.isVisible ? Color.primary : Color.secondary)
             }
+            .buttonStyle(.plain)
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
+        .contextMenu {
+            Button(action: onRename) {
+                Label("Rename", systemImage: "pencil")
+            }
+        }
     }
 }
 
