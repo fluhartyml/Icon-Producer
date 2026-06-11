@@ -57,16 +57,16 @@ struct CanvasView: View {
     }
 
     /// What a layer draws on the canvas. For this shell, only a filled background
-    /// renders a colour; everything else is blank.
+    /// renders a colour; content layers (and their elements) are blank for now.
     @ViewBuilder
     private func layerContent(_ layer: IconLayer) -> some View {
-        switch layer.kind {
+        switch layer.role {
         case .background(_, let fillHex):
             if let hex = fillHex, let color = Color(hex: hex) {
                 color
             }
-        default:
-            EmptyView()
+        case .content:
+            EmptyView() // composite elements in a later increment
         }
     }
 }
@@ -136,7 +136,7 @@ struct LayerRow: View {
             }
             .buttonStyle(.plain)
 
-            Image(systemName: layer.kind.displaySymbolName)
+            Image(systemName: layer.displaySymbolName)
                 .frame(width: 18)
                 .foregroundStyle(.secondary)
 
@@ -145,7 +145,7 @@ struct LayerRow: View {
 
             Spacer()
 
-            if layer.kind.isBlank {
+            if layer.isBlank {
                 Text("blank")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)

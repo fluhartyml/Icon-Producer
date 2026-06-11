@@ -279,6 +279,18 @@
 //      • The CANVAS has a GRID VIEW that SCALES WITH THE CANVAS (zoom in -> grid
 //        cells grow with it; zoom out -> they shrink). Grid is drawn on the
 //        canvas, scaling — NOT nested fixed guide-lines.
+//      • ✨ CHECKERBOARD + GRID (Michael 2026-06-10, "nifty easter egg"; refined):
+//        - The CHECKERBOARD is the transparency background — shown wherever the
+//          layers are transparent (the blank state). Its box size tracks the
+//          pixel density so the checker cells align with the pixel cells.
+//        - The PIXEL GRID LINES are a SEPARATE overlay drawn OVER the
+//          checkerboard, and they appear ONLY WHEN THE PIXEL PEN TOOL IS
+//          SELECTED for use (tool-contextual — gone when the pen isn't active).
+//          Grid lines are at the current pen density (128/256/512/1024).
+//        So: checkerboard = always-on transparency indicator; grid lines = pen-
+//        tool-active overlay marking the cells to paint. (Shell stub currently
+//        uses a fixed checker size + no grid; wire both to pen density + zoom
+//        when the pixel pen tool is built.)
 //      • PEN SIZE determines the PIXEL DIVISIONS: 128 / 256 / 512 / 1024. The
 //        same canvas is divided into more or fewer cells -> MORE divisions =
 //        SMALLER cells. So (confirmed Michael 2026-06-10): a 128 grid = fewer,
