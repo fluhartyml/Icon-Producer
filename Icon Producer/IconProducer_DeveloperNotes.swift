@@ -261,6 +261,72 @@
 //      • Supersedes the earlier "each layer KIND has its own inspector" wording
 //        — it's TOOL-driven, not layer-driven.
 //
+//  DECIDED 2026-06-11 — UI LAYOUT / COMPONENT PLACEMENT (Michael):
+//    How the four surfaces (canvas, toolbox, tool inspector, layers/history)
+//    are arranged. Reasoning: the TOOLBOX + its INSPECTOR are coupled and used
+//    constantly (pick a tool -> tune it); LAYERS + HISTORY are a separate,
+//    lower-frequency "managing" surface. So they must not fight for the same
+//    always-visible space.
+//      • LAYOUT adapts by GEOMETRY, not size class (iPhone landscape is still
+//        "compact" width). Locked 2026-06-11, incl. iPad (Michael: "lock the
+//        iPad in"):
+//          - PORTRAIT (taller than wide — iPhone AND iPad portrait): canvas =
+//            TOP half; everything else in the BOTTOM half (see compact model).
+//          - LANDSCAPE / WIDE (Mac, iPad landscape, iPhone landscape): the
+//            original side-by-side; room to show tools + inspector + layers all
+//            at once, NO swiping.
+//      • COMPACT (portrait) model — bottom half under the canvas:
+//          - A thin TOOL STRIP pinned right under the canvas, ALWAYS VISIBLE
+//            (tap to switch tools — high-frequency, never hidden behind a swipe).
+//          - Below it, a SWIPE / SEGMENTED panel (Michael's "sheet that swipes
+//            between the components") with three pages:
+//                TOOL (the active tool's inspector — repopulates per the strip
+//                      selection; the EFFECTS inspector is a drill-in BUTTON
+//                      here, not its own page) · LAYERS (the list) · HISTORY.
+//          - Only the three lower-frequency panels swipe; the tool strip never
+//            moves. This also fills the empty space below the layers list.
+//      • FUTURE — SCROLLABLE TOOLBOX (Michael 2026-06-11): when there are more
+//        tools than fit the strip's first screenful, the strip SCROLLS
+//        (horizontal) to reveal the overflow tools — no redesign needed as the
+//        toolbox grows. (Not needed yet; only the layout shell + layers exist.)
+//
+//  TOOL VOCABULARY / CANDIDATE TOOLBOX SET (Michael brainstorm 2026-06-11):
+//    The full set of tools the toolbox should hold. Captured so none is lost;
+//    the EXACT arrangement (which are top-level toolbox icons vs sub-tools that
+//    live in another tool's inspector) is a BUILD-TIME detail settled per tool,
+//    NOT pre-cut here. The scrollable strip (above) handles the length.
+//      • MOVE / TRANSFORM — position, scale, rotate, align a layer/element.
+//      • PAINT BUCKET — fill a layer with a solid color (fills backgrounds).
+//      • PEN — PIXEL editing (the raster painter; "pixel" not "vector"). See the
+//        PAINT BUCKET + PEN section below.
+//      • ERASER — erase pixels (naturally a PIXEL sub-tool of the pen).
+//      • EYEDROPPER — sample a color off the canvas to paint with (lean: GLOBAL,
+//        usable with any tool; already noted under the pixel tools).
+//      • SHAPE — line / rectangle / oval / polygon, stroke + fill. ABSORBS the
+//        "line tool" (a line is just the simplest shape).
+//      • PATH (a.k.a. "Vector Pen") — vector Bezier paths (anchor points + handle
+//        curves) -> a crisp, infinitely-scalable shape. The most icon-correct
+//        tool (stays sharp at every icon size). NAMING: this is the Photoshop/
+//        Illustrator "Pen"; we keep "PEN" for PIXELS and call this "PATH" so the
+//        two never blur. Effort: a MEATIER build (anchor/handle editing UI) —
+//        Apple frameworks only (SwiftUI Path / Core Graphics), but a later
+//        dedicated increment, not an early/quick one.
+//      • TEXT — TYPE characters/words in a font (single-letter-as-icon primary).
+//      • GLYPH — browse a font's FULL repertoire (font-book: dingbats, ornaments,
+//        non-typeable characters) and place one. WHY IT'S SEPARATE FROM TEXT
+//        (Michael 2026-06-11): fonts hold glyphs you can't meaningfully type —
+//        e.g. WINGDINGS / dingbat fonts are entirely symbol-glyphs — so you must
+//        browse the repertoire visually, not type. This PROMOTES the earlier
+//        "font-book glyph picker" (which had been nested inside the Text tool)
+//        to its OWN tool. So: TEXT = type · GLYPH = browse-and-pick · SYMBOL =
+//        SF Symbols — three distinct "place a pre-made mark" tools.
+//      • SYMBOL — pick an SF Symbol from Apple's library.
+//      • IMAGE — import artwork: File / Photo / paste / drag / AI (ImageCreator).
+//      • ZOOM (magnifying glass) — zoom the canvas for precise editing. A
+//        NAVIGATION tool: it does NOT log to history (consistent with Michael
+//        pulling the magnifying glass out of the history parents 2026-06-10;
+//        zoom/pan is plain navigation, never a destructive edit).
+//
 //  DECIDED 2026-06-10 — TOOLS: PAINT BUCKET + PEN (Michael):
 //
 //    PAINT BUCKET TOOL — fills a layer with a solid color. This is how the

@@ -4,39 +4,42 @@
 //
 //  Created by Michael Fluharty on 6/9/26.
 //
-//  Editor SHELL: a square canvas + the layer list, driven by the IconDocument
-//  model. No tools/inspectors/persistence yet. A brand-new icon opens with three
-//  BLANK layers (Light Background, Dark Background, Icon), so the canvas shows the
-//  transparency checkerboard until the user fills/draws.
+//  Editor SHELL. A brand-new icon opens with three BLANK layers (Light
+//  Background, Dark Background, Icon), so the canvas shows the transparency
+//  checkerboard until the user fills/draws. No tool BEHAVIOUR yet — tools select
+//  and show a placeholder inspector.
 //
-//  LAYOUT (Michael 2026-06-11): adapts to orientation by geometry, not size class
-//  (iPhone landscape still reports "compact" width, so size class would miss it).
-//   • PORTRAIT (taller than wide — the common iPhone case): canvas = TOP half,
-//     layers = BOTTOM half. The canvas gets the full width instead of being
-//     squished into a side column.
-//   • LANDSCAPE / WIDE (Mac, iPad): the original side-by-side, left as-is.
-//
-//  LAYER ROWS (Michael 2026-06-11): no "blank" label (the badge already shows an
-//  empty layer). Names are renamable (context-menu → Rename). Layers are moveable
-//  (drag to reorder). The eyeball (visibility) and a grab bar (the reorder handle)
-//  sit on the trailing edge where "blank" used to be.
+//  LAYOUT (Michael 2026-06-11): adapts by geometry, not size class (iPhone
+//  landscape is still "compact" width). See the DeveloperNotes "UI LAYOUT".
+//   • PORTRAIT (taller than wide — iPhone AND iPad portrait):
+//        canvas (top half)
+//        TOOL STRIP   — always visible, horizontally scrollable (overflow)
+//        SWIPE PANEL  — segmented + swipe between Tool / Layers / History
+//   • LANDSCAPE / WIDE (Mac, iPad/iPhone landscape): the original side-by-side
+//        canvas + layers, left as-is. (The wide arrangement that shows tools +
+//        inspector + layers all at once is a later increment.)
 //
 
 import SwiftUI
 
 struct ContentView: View {
     @State private var document = IconDocument.newDefault()
+    @State private var activeTool: Tool = .move
+    @State private var bottomPanel: BottomPanel = .layers
 
     var body: some View {
         GeometryReader { geo in
             if geo.size.height > geo.size.width {
-                // Portrait: canvas top half, layers bottom half.
+                // Portrait: canvas top half, then tool strip + swipe panel.
                 VStack(spacing: 0) {
                     canvasArea
                         .frame(height: geo.size.height / 2)
                     Divider()
-                    LayerPanel(document: document)
-                        .frame(height: geo.size.height / 2)
+                    ToolStrip(activeTool: $activeTool)
+                    Divider()
+                    BottomPanel.PanelView(document: document,
+                                          activeTool: activeTool,
+                                          selection: $bottomPanel)
                 }
             } else {
                 // Landscape / wide (Mac, iPad): original side-by-side, unchanged.
@@ -56,6 +59,140 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding()
             .background(Color(white: 0.5).opacity(0.12))
+    }
+}
+
+// MARK: - Tool strip
+
+/// The always-visible toolbox: a horizontal row of tool icons that scrolls when
+/// there are more tools than fit. Tapping a tool makes it the active tool.
+struct ToolStrip: View {
+    @Binding var activeTool: Tool
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                ForEach(Tool.allCases) { tool in
+                    Button { activeTool = tool } label: {
+                        Image(systemName: tool.systemImage)
+                            .font(.system(size: 18))
+                            .frame(width: 44, height: 44)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(activeTool == tool ? Color.accentColor.opacity(0.2)
+                                                             : Color.clear)
+                            )
+                            .foregroundStyle(activeTool == tool ? Color.accentColor : Color.primary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(tool.title)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+        }
+    }
+}
+
+// MARK: - Bottom swipe panel
+
+/// The three lower-frequency surfaces under the tool strip. A segmented control
+/// picks one; on iOS you can also swipe between them.
+enum BottomPanel: String, CaseIterable, Identifiable {
+    case tool = "Tool"
+    case layers = "Layers"
+    case history = "History"
+
+    var id: String { rawValue }
+
+    struct PanelView: View {
+        let document: IconDocument
+        let activeTool: Tool
+        @Binding var selection: BottomPanel
+
+        var body: some View {
+            VStack(spacing: 0) {
+                Picker("", selection: $selection) {
+                    ForEach(BottomPanel.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(8)
+
+                #if os(iOS)
+                TabView(selection: $selection) {
+                    toolPage.tag(BottomPanel.tool)
+                    layersPage.tag(BottomPanel.layers)
+                    historyPage.tag(BottomPanel.history)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                #else
+                // macOS has no page style; portrait branch is unused on Mac, but
+                // it still must compile — switch on the selection.
+                Group {
+                    switch selection {
+                    case .tool:    toolPage
+                    case .layers:  layersPage
+                    case .history: historyPage
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                #endif
+            }
+        }
+
+        private var toolPage: some View {
+            ToolInspectorPlaceholder(tool: activeTool)
+        }
+
+        private var layersPage: some View {
+            LayerPanel(document: document, showsHeader: false)
+        }
+
+        private var historyPage: some View {
+            PanelPlaceholder(systemImage: "clock.arrow.circlepath",
+                             title: "History",
+                             subtitle: "Tool-grouped step-back — coming soon")
+        }
+    }
+}
+
+/// Placeholder shown on the Tool page until each tool's real inspector is built.
+struct ToolInspectorPlaceholder: View {
+    let tool: Tool
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: tool.systemImage)
+                .font(.system(size: 34))
+                .foregroundStyle(.secondary)
+            Text(tool.title)
+                .font(.headline)
+            Text("Tool inspector — coming soon")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+}
+
+/// Generic empty-state placeholder for a panel page.
+struct PanelPlaceholder: View {
+    let systemImage: String
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.system(size: 34))
+                .foregroundStyle(.secondary)
+            Text(title).font(.headline)
+            Text(subtitle).font(.caption).foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
     }
 }
 
@@ -124,19 +261,24 @@ struct Checkerboard: View {
 /// The layer list. Shown TOP-of-stack first (the array is bottom-to-top, so the
 /// display is reversed). Each row: kind badge + editable name + (eyeball / grab
 /// bar) on the trailing edge. Reorder is always-on (edit mode active); rename is
-/// via the row's context menu so it never fights the drag handle.
+/// via the row's context menu so it never fights the drag handle. `showsHeader`
+/// is false inside the portrait swipe panel (the segmented control already
+/// labels it "Layers").
 struct LayerPanel: View {
     let document: IconDocument
+    var showsHeader: Bool = true
     @State private var renamingID: IconLayer.ID?
     @State private var draftName = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Layers")
-                .font(.headline)
-                .padding(.horizontal)
-                .padding(.vertical, 10)
-            Divider()
+            if showsHeader {
+                Text("Layers")
+                    .font(.headline)
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+                Divider()
+            }
             List {
                 ForEach(Array(document.layers.reversed())) { layer in
                     LayerRow(
