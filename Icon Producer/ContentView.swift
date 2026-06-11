@@ -307,7 +307,7 @@ struct CanvasView: View {
                 Checkerboard()
                 ForEach(document.layers) { layer in
                     if layer.isVisible {
-                        layerContent(layer)
+                        layerContent(layer, side: side)
                     }
                 }
                 if showTransformBox, let idx = activeIndex {
@@ -321,17 +321,39 @@ struct CanvasView: View {
         }
     }
 
-    /// What a layer draws on the canvas. For this shell, only a filled background
-    /// renders a colour; content layers (and their elements) are blank for now.
+    /// What a layer draws on the canvas. A filled background renders its colour;
+    /// a content layer renders its elements at the layer's transform. (Most
+    /// element kinds wait for their tools; `symbol` renders now so the TEST-ONLY
+    /// shakedown star is visible for the Move/Transform tool.)
     @ViewBuilder
-    private func layerContent(_ layer: IconLayer) -> some View {
+    private func layerContent(_ layer: IconLayer, side: CGFloat) -> some View {
         switch layer.role {
         case .background(_, let fillHex):
             if let hex = fillHex, let color = Color(hex: hex) {
                 color
             }
         case .content:
-            EmptyView() // composite elements in a later increment
+            ForEach(layer.elements) { element in
+                elementView(element, transform: layer.transform, side: side)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func elementView(_ element: LayerElement,
+                             transform t: LayerTransform,
+                             side: CGFloat) -> some View {
+        switch element.content {
+        case .symbol(let symbol):
+            Image(systemName: symbol.systemName)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(Color(hex: symbol.tintHex) ?? .primary)
+                .frame(width: side * t.scale, height: side * t.scale)
+                .rotationEffect(.degrees(t.rotationDegrees))
+                .position(x: t.center.x * side, y: t.center.y * side)
+        default:
+            EmptyView() // pixels / image / text render once their tools exist
         }
     }
 

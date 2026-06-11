@@ -42,16 +42,30 @@ final class IconDocument {
         self.layers = layers
     }
 
+    /// ⚠️ TEST-ONLY — REMOVE BEFORE DISTRIBUTION. Puts ONE visible element (a
+    /// star) on the Icon layer so Move/Transform (and later tools) have something
+    /// to manipulate before the drawing tools exist. Set to `false` (or delete the
+    /// block in `newDefault()`) before shipping. The real default is all-blank.
+    static let includeShakedownTestElement = true
+
     /// A brand-new icon's default stack: Light Background, Dark Background, Icon —
     /// ALL THREE START BLANK. The user fills the backgrounds with the paint bucket
     /// and adds content to "Icon". More layers added as needed (infinite). Light
     /// vs dark is previewed by toggling a background's `isVisible` (the eyeball);
     /// there are no light/dark mode buttons.
     static func newDefault() -> IconDocument {
-        IconDocument(layers: [
+        var iconLayer = IconLayer(name: "Icon", role: .content)
+        if includeShakedownTestElement {
+            // ⚠️ TEST-ONLY shakedown content — remove before distribution.
+            iconLayer.elements = [
+                LayerElement(content: .symbol(SymbolContent(systemName: "star.fill",
+                                                            tintHex: "#1E90FF")))
+            ]
+        }
+        return IconDocument(layers: [
             IconLayer(name: "Light Background", role: .background(.light, fillHex: nil)),
             IconLayer(name: "Dark Background",  role: .background(.dark,  fillHex: nil)),
-            IconLayer(name: "Icon",             role: .content),
+            iconLayer,
         ])
     }
 }

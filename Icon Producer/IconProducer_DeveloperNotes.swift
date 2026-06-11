@@ -295,7 +295,18 @@
 //    the EXACT arrangement (which are top-level toolbox icons vs sub-tools that
 //    live in another tool's inspector) is a BUILD-TIME detail settled per tool,
 //    NOT pre-cut here. The scrollable strip (above) handles the length.
-//      • MOVE / TRANSFORM — position, scale, rotate, align a layer/element.
+//      • MOVE / TRANSFORM — ONE tool (Michael 2026-06-11, chose combined not
+//        split). TRANSFORM is the umbrella: MOVE (reposition) · SCALE · ROTATE ·
+//        SKEW (slant/shear) · DISTORT (free corner drag) · FLIP. The inspector
+//        offers a MODE TOGGLE between the two behaviours Michael recalls as the
+//        ARROW and the FINGER/HAND:
+//          - ARROW (pointer) = select + grab the HANDLES to scale/rotate/skew/
+//            transform.
+//          - FINGER / HAND = grab the object's BODY and MOVE the whole thing.
+//        Both are MODES inside the one Move/Transform inspector — NOT two toolbox
+//        tools. Acts on the active layer (per-element later). NOTE: Move can also
+//        reposition the SELECTION outline itself (the marching ants), not just
+//        content — that rides with the selection subsystem.
 //      • PAINT BUCKET — fill a layer with a solid color (fills backgrounds).
 //      • PEN — PIXEL editing (the raster painter; "pixel" not "vector"). See the
 //        PAINT BUCKET + PEN section below.
@@ -356,10 +367,25 @@
 //        SF Symbols — three distinct "place a pre-made mark" tools.
 //      • SYMBOL — pick an SF Symbol from Apple's library.
 //      • IMAGE — import artwork: File / Photo / paste / drag / AI (ImageCreator).
-//      • ZOOM (magnifying glass) — zoom the canvas for precise editing. A
-//        NAVIGATION tool: it does NOT log to history (consistent with Michael
-//        pulling the magnifying glass out of the history parents 2026-06-10;
-//        zoom/pan is plain navigation, never a destructive edit).
+//      • ZOOM (magnifying glass) — zoom the canvas for precise editing, and PAN
+//        FOLDS IN HERE (Michael 2026-06-11): pan = scroll the VIEW when zoomed in
+//        (two-finger drag / Photoshop Hand-tool style) = NAVIGATION; the content
+//        does NOT move (distinct from MOVE, which relocates content). Zoom + pan
+//        are the get-around pair (zoom to pixel level, pan to drop path anchors).
+//        A NAVIGATION tool: does NOT log to history (consistent with pulling the
+//        magnifying glass out of the history parents 2026-06-10).
+//        GESTURE MODEL = PROCREATE-STYLE, ALWAYS-ON (Michael 2026-06-11, locked):
+//        native iOS gestures, available REGARDLESS of the active tool — you do
+//        NOT switch to a zoom tool to navigate. 1 FINGER = the active tool · 2
+//        FINGERS DRAG = pan · PINCH = zoom · (optional double-tap = fit / 100%).
+//        Impl: wrap the canvas in a scroll view (UIScrollView via a representable;
+//        its pan minimumNumberOfTouches = 2 so single-finger passes through to the
+//        tool) -> free native pinch-zoom + two-finger pan. This is INFRASTRUCTURE
+//        that benefits every tool (you'll want to draw zoomed-in early, e.g. path-
+//        tracing), so it may be worth building BEFORE toolbox slot 12, not after.
+//        The ZOOM TOOL icon's residual role: near-redundant on iPhone/iPad (just
+//        pinch) -> a convenience (tap-to-zoom + Fit/100%/Fit-Selection buttons in
+//        its inspector); on MAC it earns its keep (no pinch -> click/scroll zoom).
 //
 //  WORKFLOW — SELECTION -> COPY/PASTE/DUPLICATE -> ARRANGE (Michael 2026-06-11):
 //    Validates the layers + selection + move + paste pieces working together.
