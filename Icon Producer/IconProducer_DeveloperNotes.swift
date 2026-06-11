@@ -304,9 +304,14 @@
 //        usable with any tool; already noted under the pixel tools).
 //      • SHAPE — line / rectangle / oval / polygon, stroke + fill. ABSORBS the
 //        "line tool" (a line is just the simplest shape).
-//      • PATH (a.k.a. "Vector Pen") — vector Bezier paths (anchor points + handle
-//        curves). NAMING: this is the Photoshop/Illustrator "Pen"; we keep "PEN"
-//        for PIXELS and call this "PATH" so the two never blur. THREE JOBS:
+//      • PATH (a.k.a. "Vector Pen") — a vector path of ANCHOR POINTS. PRIMARY
+//        MODE = ANCHOR-TO-ANCHOR STRAIGHT SEGMENTS (Michael 2026-06-11: he never
+//        uses Bezier — he zooms in until the image is PIXELATED, blurs his eyes
+//        to read the average color variance at the edge, and drops straight-line
+//        points around it; many short segments approximate any curve). BEZIER
+//        curve handles = OPTIONAL LATER enhancement, NOT needed for his workflow.
+//        NAMING: this is the Photoshop/Illustrator "Pen"; we keep "PEN" for
+//        PIXELS and call this "PATH" so the two never blur. THREE JOBS:
 //          (a) DRAW a crisp, infinitely-scalable vector SHAPE (fill/stroke).
 //          (b) MAKE A SELECTION — Michael's primary use (2026-06-11). His real
 //              workflow: zoom in to pixel level -> drop anchor points to trace an
@@ -328,13 +333,18 @@
 //          INVERT (later add/subtract) · DELETE-WITHIN-SELECTION (clear to alpha).
 //          Path is ONE source of a selection (magic-wand / rectangle etc. later).
 //          Marching ants = animated dashed stroke (Core Animation dash phase).
-//        Effort: MEATIER (anchor/handle editing UI + the selection subsystem) —
-//        Apple frameworks only (CGPath + CGImage masking; Metal optional), a
-//        LATER dedicated increment, not an early/quick one.
+//        Effort: the path tool ITSELF is SIMPLER than first framed — straight
+//        anchor-to-anchor segments need NO Bezier handle UI (just tap-to-drop
+//        points + close the path). The weight is the SELECTION SUBSYSTEM it
+//        feeds. Apple frameworks only (CGPath + CGImage masking; Metal optional).
+//        Still a LATER increment (toolbox slot 7 + needs selection), but lighter
+//        than a full Bezier editor.
 //      • MAGIC WAND / MAGIC SELECTION — tap to select a contiguous color region.
 //        A SECONDARY selection source: Michael used it briefly but it "didn't
 //        select what I wanted all the time," so the PATH tool is the PRIMARY /
-//        workhorse selection method. Keep magic wand as an optional convenience.
+//        workhorse selection method. BUT it's RELIABLE on CLEAN UNIFORM regions
+//        (a transparent background, a solid fill) and weak only on noisy image
+//        content — see "REGENERATE A SELECTION FROM A LAYER'S ALPHA" below.
 //      • TEXT — TYPE characters/words in a font (single-letter-as-icon primary).
 //      • GLYPH — browse a font's FULL repertoire (font-book: dingbats, ornaments,
 //        non-typeable characters) and place one. WHY IT'S SEPARATE FROM TEXT
@@ -368,12 +378,78 @@
 //    has TWO sources: EXTERNAL clipboard image (File/Photo/web) AND INTERNAL
 //    copied selection/layer — both Cmd+V, both follow the selection rule.
 //
+//  KEYSTONE — PATHS/SELECTIONS ARE LAYER-INDEPENDENT (Michael 2026-06-11):
+//    A path (and the selection made from it) is NOT owned by the layer it was
+//    drawn on — it lives at the DOCUMENT/CANVAS level and floats free of layers
+//    (Photoshop "Paths" panel model: drawn once, persists, REUSABLE). COPY acts
+//    on the ACTIVE layer THROUGH the current selection — so the SHAPE stays
+//    fixed while WHICH LAYER IS ACTIVE decides what gets harvested. => a path is
+//    a reusable COOKIE-CUTTER: draw a flower path once, stamp it on a texture
+//    layer (Cmd+C/V) for a textured flower, re-activate the SAME path on a
+//    gradient layer for a gradient flower, etc. One shape, any layer's content.
+//    Impl: store paths/selections on the IconDocument (not on a layer); copy =
+//    clip the active layer's CGImage to the selection CGPath -> new layer.
+//
+//  REGENERATE A SELECTION FROM A LAYER'S ALPHA (Michael 2026-06-11):
+//    You never truly lose a cookie-cutter while a layer still HAS that shape.
+//    Even after the original path is gone, take a shaped layer (the flower on a
+//    clear background) -> MAGIC WAND the empty TRANSPARENT background (reliable
+//    here — uniform region) -> INVERT -> the flower shape is selected again, an
+//    exact fresh cookie-cutter. The principle: a LAYER'S OWN ALPHA IS A
+//    SELECTION SOURCE. One-tap shortcut worth adding = "load layer transparency
+//    as selection" (Photoshop Cmd-click the layer thumbnail) = select that
+//    layer's opaque pixels directly, no wand+invert dance.
+//
 //  DECIDED 2026-06-10 — TOOLS: PAINT BUCKET + PEN (Michael):
 //
 //    PAINT BUCKET TOOL — fills a layer with a solid color. This is how the
 //      BACKGROUND layers get filled (white for Light, black/dark for Dark, etc).
 //      Its COLOR PICKER lives in the TOOL INSPECTOR (when paint bucket is the
 //      active tool). Select bucket -> pick color in inspector -> fill the layer.
+//      TWO FILL MODES — what STOPS the flood (Michael 2026-06-11, confirmed):
+//        1. SELECTION ACTIVE -> the SELECTION EDGE is the wall. Tap whichever
+//           side you want; it floods that region edge-to-edge, OVERWRITING any
+//           existing colors (the boundary stops it, not color-matching). Tap
+//           inside = fill inside, tap outside = fill outside. Flower cookie-
+//           cutter example: red + tap inside -> red flower; black + tap outside
+//           -> black bg -> one layer = a red flower on a black background.
+//        2. NO SELECTION -> the COLOR EDGES are the walls. Tap a region and it
+//           floods the CONTIGUOUS same-color area from the tap point until it
+//           hits a different color (with a TOLERANCE). Different-colored pixels
+//           act as DAMS; IF THERE ARE NO PIXELS TO DAM IT, THE FLOOD CONTINUES
+//           across the whole layer (Michael 2026-06-11). So: uniform/blank layer
+//           = whole layer fills; flower-on-clear = tap the clear area fills
+//           around the flower (the flower edge dams it), tap the flower fills it.
+//           OOZE ON REPEATED TAP (Michael 2026-06-11): each tap fills within the
+//           TOLERANCE of the tapped pixel. On SOFT/gradient/anti-aliased edges,
+//           the first tap fills to where the gradient leaves tolerance; those
+//           edge pixels are now the fill color, so the NEXT tap finds the next
+//           ring within tolerance and CREEPS one band further. Keep tapping and
+//           it OOZES outward ring by ring until the whole layer is one color. A
+//           HARD edge dams it cold. This falls out FREE of tolerance flood-fill
+//           (re-sample current pixels each tap); the TOLERANCE slider tunes the
+//           creep (low = tiny per tap, high = big jumps / one-tap fill). KEEP IT.
+//      PER LAYER TYPE: a BACKGROUND layer is uniform (no internal edges) so the
+//        bucket fills the whole layer = just SET ITS FILL (no raster needed). A
+//        CONTENT layer's flood-fill is a real RASTER op (pixel buffer + tolerance)
+//        -> rides with the pixel tooling.
+//      STAGING: v1 bucket (BUILD FIRST) = whole-layer fill on a BACKGROUND (set
+//        its fill) — Light/Dark backgrounds, makes the canvas change today. v2 =
+//        mode-2 raster flood-fill (content layers) + mode-1 selection-bounded
+//        fills (needs the SELECTION SUBSYSTEM, see PATH).
+//      PREREQUISITE for v1: an ACTIVE/SELECTED layer must exist (we removed layer
+//        selection when the list became always-reorderable) -> tap a row = active
+//        layer, distinct from the drag handle. APPLY = tap the canvas to pour
+//        (not auto-fill on colour change). History logging deferred (no engine yet).
+//      PATTERN FILL — PARKED / UNCERTAIN (Michael 2026-06-11): Photoshop's bucket
+//        could fill with a tiled PATTERN instead of a solid color. Michael has
+//        never used it himself ("i dont know"); recalls a friend tiling a tiny
+//        (~4-6px) line texture to fake a CRT SCANLINE / line-sweep effect. NOT
+//        committed — parked as a candidate. If wanted later it's a clean add
+//        (bucket source = Color | Pattern). NOTE: that CRT-scanline look might be
+//        cleaner as a GENERATIVE EFFECT (procedural scanlines w/ spacing/thickness
+//        sliders in the Effects inspector — scales with the icon) than a hand-made
+//        tiled pattern. Decide later.
 //
 //    PEN TOOL = THE PIXEL-EDITING TOOL (this is how pixels are drawn; "pixel
 //      tools" above = the pen and its friends). When the PEN is active:
@@ -678,6 +754,24 @@
 //    App Store rules require. VERIFY ON X27 BETA against Apple's Icon Composer
 //    docs before locking the export contract — do NOT assert the opacity rule
 //    from memory.
+//      MICHAEL'S RECOLLECTION (2026-06-11): "Xcode didn't like clear pixels" —
+//      matches the classic rule: iOS app icons must be OPAQUE (no alpha); Xcode/
+//      ASC reject a transparent app icon. This is EXACTLY why the Background
+//      layers are opaque: editing can be fully transparent (onion-paper, cutouts,
+//      a flower on clear), but EXPORT FLATTENS onto the opaque background -> the
+//      shipped PNG has ZERO clear pixels. So clear pixels are fine WHILE editing,
+//      never in the FINAL icon. Nuances to verify: that's the iOS rule; macOS
+//      icons historically ALLOW transparency (free-form); and the layered .icon
+//      path manages alpha differently — but we export FLAT PNGs, so the classic
+//      opaque rule governs and the opaque background covers it.
+//      EXPORT FLATTEN BACKSTOP (Michael 2026-06-11, chose B): at flatten, any
+//      pixel STILL transparent (unfilled background, a gap) is written as an
+//      OPAQUE pixel so a clear pixel NEVER ships. The backstop FOLLOWS THE
+//      APPEARANCE being exported: Light variant -> WHITE, Dark variant -> BLACK
+//      (or the Dark Background's chosen color) — so the fill blends into either
+//      icon instead of leaving a white speck on the dark one. A safety net on
+//      top of the opaque Background layers; the no-clear-pixel guarantee holds
+//      regardless of what the user did or didn't fill.
 //
 //    EVERYTHING ELSE about the pixel tooling carries over from Shelf-Ready's
 //    PIXEL-ART EDITOR design (art-cell decoupled from hardware pixel; draw-small

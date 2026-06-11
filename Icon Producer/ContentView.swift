@@ -4,20 +4,21 @@
 //
 //  Created by Michael Fluharty on 6/9/26.
 //
-//  Editor SHELL. A brand-new icon opens with three BLANK layers (Light
-//  Background, Dark Background, Icon), so the canvas shows the transparency
-//  checkerboard until the user fills/draws. No tool BEHAVIOUR yet — tools select
-//  and show a placeholder inspector.
+//  Editor SHELL + tools coming live ONE AT A TIME (toolbox order). A brand-new
+//  icon opens with three BLANK layers (Light Background, Dark Background, Icon),
+//  so the canvas shows the transparency checkerboard until the user fills/draws.
 //
-//  LAYOUT (Michael 2026-06-11): adapts by geometry, not size class (iPhone
-//  landscape is still "compact" width). See the DeveloperNotes "UI LAYOUT".
+//  LAYOUT (Michael 2026-06-11): adapts by geometry, not size class.
 //   • PORTRAIT (taller than wide — iPhone AND iPad portrait):
-//        canvas (top half)
-//        TOOL STRIP   — always visible, horizontally scrollable (overflow)
-//        SWIPE PANEL  — segmented + swipe between Tool / Layers / History
-//   • LANDSCAPE / WIDE (Mac, iPad/iPhone landscape): the original side-by-side
-//        canvas + layers, left as-is. (The wide arrangement that shows tools +
-//        inspector + layers all at once is a later increment.)
+//        canvas (top half) · TOOL STRIP · ACTIVE-TOOL NAME · SWIPE PANEL
+//        (Tool inspector / Layers / History).
+//   • LANDSCAPE / WIDE (Mac, iPad/iPhone landscape): the original side-by-side.
+//
+//  TOOL #1 — MOVE / TRANSFORM (live 2026-06-11): tap a layer row -> ACTIVE layer
+//  (highlighted). With Move active, a bounding box shows on the canvas; drag to
+//  move; the inspector has scale / rotation / center / reset. Acts on the WHOLE
+//  layer's transform. (Scale/rotate handles + flip + per-element = follow-ups;
+//  layers are still blank so you manipulate the frame, content follows later.)
 //
 
 import SwiftUI
@@ -25,6 +26,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var document = IconDocument.newDefault()
     @State private var activeTool: Tool = .move
+    @State private var activeLayerID: IconLayer.ID?
     @State private var bottomPanel: BottomPanel = .layers
 
     var body: some View {
@@ -40,6 +42,7 @@ struct ContentView: View {
                     Divider()
                     BottomPanel.PanelView(document: document,
                                           activeTool: activeTool,
+                                          activeLayerID: $activeLayerID,
                                           selection: $bottomPanel)
                 }
             } else {
@@ -48,7 +51,7 @@ struct ContentView: View {
                     canvasArea
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     Divider()
-                    LayerPanel(document: document)
+                    LayerPanel(document: document, activeLayerID: $activeLayerID)
                         .frame(width: 280)
                 }
             }
@@ -56,7 +59,9 @@ struct ContentView: View {
     }
 
     private var canvasArea: some View {
-        CanvasView(document: document)
+        CanvasView(document: document,
+                   activeLayerID: activeLayerID,
+                   showTransformBox: activeTool == .move)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding()
             .background(Color(white: 0.5).opacity(0.12))
@@ -128,6 +133,7 @@ enum BottomPanel: String, CaseIterable, Identifiable {
     struct PanelView: View {
         let document: IconDocument
         let activeTool: Tool
+        @Binding var activeLayerID: IconLayer.ID?
         @Binding var selection: BottomPanel
 
         var body: some View {
@@ -161,12 +167,17 @@ enum BottomPanel: String, CaseIterable, Identifiable {
             }
         }
 
+        @ViewBuilder
         private var toolPage: some View {
-            ToolInspectorPlaceholder(tool: activeTool)
+            if activeTool == .move {
+                MoveTransformInspector(document: document, activeLayerID: activeLayerID)
+            } else {
+                ToolInspectorPlaceholder(tool: activeTool)
+            }
         }
 
         private var layersPage: some View {
-            LayerPanel(document: document, showsHeader: false)
+            LayerPanel(document: document, showsHeader: false, activeLayerID: $activeLayerID)
         }
 
         private var historyPage: some View {
@@ -216,12 +227,78 @@ struct PanelPlaceholder: View {
     }
 }
 
+// MARK: - Move / Transform inspector
+
+/// Tool #1's inspector: scale / rotation / center / reset on the ACTIVE layer's
+/// transform. (Drag-to-move lives on the canvas box; handles + flip are later.)
+struct MoveTransformInspector: View {
+    let document: IconDocument
+    let activeLayerID: IconLayer.ID?
+
+    private var index: Int? {
+        guard let id = activeLayerID else { return nil }
+        return document.layers.firstIndex(where: { $0.id == id })
+    }
+
+    var body: some View {
+        if let idx = index {
+            VStack(alignment: .leading, spacing: 18) {
+                Text(document.layers[idx].name).font(.headline)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Scale  \(Int(document.layers[idx].transform.scale * 100))%")
+                        .font(.subheadline)
+                    Slider(value: transformBinding(\.scale, idx), in: 0.1...1.0)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Rotation  \(Int(document.layers[idx].transform.rotationDegrees))°")
+                        .font(.subheadline)
+                    Slider(value: transformBinding(\.rotationDegrees, idx), in: -180...180)
+                }
+
+                HStack {
+                    Button("Center") {
+                        document.layers[idx].transform.center = CGPoint(x: 0.5, y: 0.5)
+                    }
+                    Button("Reset") {
+                        document.layers[idx].transform = LayerTransform()
+                    }
+                }
+                .buttonStyle(.bordered)
+
+                Spacer()
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else {
+            PanelPlaceholder(systemImage: "hand.tap",
+                             title: "Move / Transform",
+                             subtitle: "Tap a layer to select it, then drag it on the canvas")
+        }
+    }
+
+    private func transformBinding<V>(_ keyPath: WritableKeyPath<LayerTransform, V>,
+                                     _ idx: Int) -> Binding<V> {
+        Binding(get: { document.layers[idx].transform[keyPath: keyPath] },
+                set: { document.layers[idx].transform[keyPath: keyPath] = $0 })
+    }
+}
+
 // MARK: - Canvas
 
 /// The square artboard. Composites the visible layers bottom-to-top over a
 /// transparency checkerboard. (Blank layers render nothing -> checkerboard shows.)
+/// When Move is active and a layer is selected, draws a draggable transform box.
 struct CanvasView: View {
     let document: IconDocument
+    var activeLayerID: IconLayer.ID? = nil
+    var showTransformBox: Bool = false
+
+    private var activeIndex: Int? {
+        guard let id = activeLayerID else { return nil }
+        return document.layers.firstIndex(where: { $0.id == id })
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -233,8 +310,12 @@ struct CanvasView: View {
                         layerContent(layer)
                     }
                 }
+                if showTransformBox, let idx = activeIndex {
+                    transformBox(side: side, index: idx)
+                }
             }
             .frame(width: side, height: side)
+            .coordinateSpace(name: "canvas")
             .overlay(Rectangle().stroke(Color.secondary.opacity(0.4), lineWidth: 1))
             .frame(maxWidth: .infinity, maxHeight: .infinity) // center in the area
         }
@@ -252,6 +333,28 @@ struct CanvasView: View {
         case .content:
             EmptyView() // composite elements in a later increment
         }
+    }
+
+    /// The draggable transform box for the active layer (Move tool). Reflects the
+    /// layer's transform (center / scale / rotation); dragging updates the center.
+    private func transformBox(side: CGFloat, index idx: Int) -> some View {
+        let t = document.layers[idx].transform
+        let boxSide = max(24, t.scale * side)
+        return Rectangle()
+            .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+            .background(Color.accentColor.opacity(0.06))
+            .frame(width: boxSide, height: boxSide)
+            .rotationEffect(.degrees(t.rotationDegrees))
+            .position(x: t.center.x * side, y: t.center.y * side)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
+                    .onChanged { value in
+                        let nx = min(max(value.location.x / side, 0), 1)
+                        let ny = min(max(value.location.y / side, 0), 1)
+                        document.layers[idx].transform.center = CGPoint(x: nx, y: ny)
+                    }
+            )
     }
 }
 
@@ -279,14 +382,14 @@ struct Checkerboard: View {
 // MARK: - Layer panel
 
 /// The layer list. Shown TOP-of-stack first (the array is bottom-to-top, so the
-/// display is reversed). Each row: kind badge + editable name + (eyeball / grab
-/// bar) on the trailing edge. Reorder is always-on (edit mode active); rename is
-/// via the row's context menu so it never fights the drag handle. `showsHeader`
-/// is false inside the portrait swipe panel (the segmented control already
-/// labels it "Layers").
+/// display is reversed). Tap a row to make that layer ACTIVE (highlighted). Each
+/// row: kind badge + editable name + eyeball; reorder is always-on (edit mode);
+/// rename is via the row's context menu. `showsHeader` is false inside the
+/// portrait swipe panel (the segmented control already labels it "Layers").
 struct LayerPanel: View {
     let document: IconDocument
     var showsHeader: Bool = true
+    @Binding var activeLayerID: IconLayer.ID?
     @State private var renamingID: IconLayer.ID?
     @State private var draftName = ""
 
@@ -303,9 +406,13 @@ struct LayerPanel: View {
                 ForEach(Array(document.layers.reversed())) { layer in
                     LayerRow(
                         layer: layer,
+                        isActive: layer.id == activeLayerID,
+                        onActivate: { activeLayerID = layer.id },
                         onToggleVisibility: { toggleVisibility(layer.id) },
                         onRename: { beginRename(layer) }
                     )
+                    .listRowBackground(layer.id == activeLayerID
+                                       ? Color.accentColor.opacity(0.15) : nil)
                 }
                 .onMove(perform: move)
             }
@@ -354,19 +461,26 @@ struct LayerPanel: View {
 
 struct LayerRow: View {
     let layer: IconLayer
+    let isActive: Bool
+    let onActivate: () -> Void
     let onToggleVisibility: () -> Void
     let onRename: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: layer.displaySymbolName)
-                .frame(width: 18)
-                .foregroundStyle(.secondary)
-
-            Text(layer.name)
-                .foregroundStyle(layer.isVisible ? Color.primary : Color.secondary)
-
-            Spacer()
+            // Tapping the badge/name area selects (activates) the layer.
+            Button(action: onActivate) {
+                HStack(spacing: 10) {
+                    Image(systemName: layer.displaySymbolName)
+                        .frame(width: 18)
+                        .foregroundStyle(.secondary)
+                    Text(layer.name)
+                        .foregroundStyle(layer.isVisible ? Color.primary : Color.secondary)
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
             Button(action: onToggleVisibility) {
                 Image(systemName: layer.isVisible ? "eye" : "eye.slash")
@@ -375,7 +489,6 @@ struct LayerRow: View {
             .buttonStyle(.plain)
         }
         .padding(.vertical, 2)
-        .contentShape(Rectangle())
         .contextMenu {
             Button(action: onRename) {
                 Label("Rename", systemImage: "pencil")
