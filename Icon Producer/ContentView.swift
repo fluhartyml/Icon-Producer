@@ -36,6 +36,7 @@ struct ContentView: View {
                         .frame(height: geo.size.height / 2)
                     Divider()
                     ToolStrip(activeTool: $activeTool)
+                    ActiveToolLabel(tool: activeTool)
                     Divider()
                     BottomPanel.PanelView(document: document,
                                           activeTool: activeTool,
@@ -85,12 +86,31 @@ struct ToolStrip: View {
                             .foregroundStyle(activeTool == tool ? Color.accentColor : Color.primary)
                     }
                     .buttonStyle(.plain)
-                    .help(tool.title)
+                    .help(tool.title)                 // tooltip on Mac / iPad pointer
+                    .accessibilityLabel(tool.title)   // VoiceOver everywhere
                 }
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
         }
+    }
+}
+
+/// Shows the ACTIVE tool's name on screen — the touch/iPhone substitute for a
+/// hover tooltip. Updates the instant a tool is tapped, on every platform, so
+/// the less-obvious glyphs are never a guess.
+struct ActiveToolLabel: View {
+    let tool: Tool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: tool.systemImage)
+            Text(tool.title).fontWeight(.medium)
+        }
+        .font(.subheadline)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 5)
+        .background(Color(white: 0.5).opacity(0.10))
     }
 }
 
