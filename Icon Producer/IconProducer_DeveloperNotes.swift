@@ -305,12 +305,36 @@
 //      • SHAPE — line / rectangle / oval / polygon, stroke + fill. ABSORBS the
 //        "line tool" (a line is just the simplest shape).
 //      • PATH (a.k.a. "Vector Pen") — vector Bezier paths (anchor points + handle
-//        curves) -> a crisp, infinitely-scalable shape. The most icon-correct
-//        tool (stays sharp at every icon size). NAMING: this is the Photoshop/
-//        Illustrator "Pen"; we keep "PEN" for PIXELS and call this "PATH" so the
-//        two never blur. Effort: a MEATIER build (anchor/handle editing UI) —
-//        Apple frameworks only (SwiftUI Path / Core Graphics), but a later
-//        dedicated increment, not an early/quick one.
+//        curves). NAMING: this is the Photoshop/Illustrator "Pen"; we keep "PEN"
+//        for PIXELS and call this "PATH" so the two never blur. THREE JOBS:
+//          (a) DRAW a crisp, infinitely-scalable vector SHAPE (fill/stroke).
+//          (b) MAKE A SELECTION — Michael's primary use (2026-06-11). His real
+//              workflow: zoom in to pixel level -> drop anchor points to trace an
+//              object -> convert the PATH to a SELECTION ("marching ants") ->
+//              INVERT the selection (now the background is selected) -> DELETE ->
+//              the background pixels clear to TRANSPARENT, revealing the layer
+//              beneath. A clean cutout. Fits our model BETTER than Photoshop:
+//              content layers are already transparent, so the deleted area shows
+//              straight through (no white backing to fight).
+//          (c) STROKE PATH (Michael 2026-06-11) — ink ALONG the path with the
+//              active drawing tool (pen/brush/pencil), rasterizing the stroke
+//              onto the current layer. The TRACING move: put a transparent layer
+//              on top (clear "onion paper" — you see the layer beneath through
+//              it), trace its shape with a path, then Stroke Path to draw that
+//              outline onto the clear top layer -> the underlying image is now
+//              traced onto its own independent transparent layer.
+//        IMPLICATION — this needs a SELECTION SUBSYSTEM, not just the path tool:
+//          a SELECTION (mask region) that ops respect · path -> selection ·
+//          INVERT (later add/subtract) · DELETE-WITHIN-SELECTION (clear to alpha).
+//          Path is ONE source of a selection (magic-wand / rectangle etc. later).
+//          Marching ants = animated dashed stroke (Core Animation dash phase).
+//        Effort: MEATIER (anchor/handle editing UI + the selection subsystem) —
+//        Apple frameworks only (CGPath + CGImage masking; Metal optional), a
+//        LATER dedicated increment, not an early/quick one.
+//      • MAGIC WAND / MAGIC SELECTION — tap to select a contiguous color region.
+//        A SECONDARY selection source: Michael used it briefly but it "didn't
+//        select what I wanted all the time," so the PATH tool is the PRIMARY /
+//        workhorse selection method. Keep magic wand as an optional convenience.
 //      • TEXT — TYPE characters/words in a font (single-letter-as-icon primary).
 //      • GLYPH — browse a font's FULL repertoire (font-book: dingbats, ornaments,
 //        non-typeable characters) and place one. WHY IT'S SEPARATE FROM TEXT
@@ -326,6 +350,23 @@
 //        NAVIGATION tool: it does NOT log to history (consistent with Michael
 //        pulling the magnifying glass out of the history parents 2026-06-10;
 //        zoom/pan is plain navigation, never a destructive edit).
+//
+//  WORKFLOW — SELECTION -> COPY/PASTE/DUPLICATE -> ARRANGE (Michael 2026-06-11):
+//    Validates the layers + selection + move + paste pieces working together.
+//    His real Photoshop pattern, e.g. building a constellation of stars:
+//      1. PATH-tool around the star on an image layer -> make a SELECTION.
+//      2. Select that image layer; CMD+C copies just the SELECTED REGION (the
+//         star), NOT the whole layer.
+//      3. CMD+V pastes it onto a NEW layer AUTOMATICALLY (our paste->new-layer
+//         rule). Repeat to drop MANY stars, each as its OWN layer.
+//      4. MOVE/TRANSFORM tool: move each star, RESIZE it per layer, and BRING
+//         FORWARD / SEND BACK = z-order = the layer-list DRAG-REORDER (already
+//         built). Arrange them into a constellation.
+//    Already decided/built: paste->new layer · per-layer move/scale · reorder.
+//    NEW capability it needs: COPY A SELECTION's pixels off a layer (not the
+//    whole layer) — part of the selection subsystem (see PATH). Also note paste
+//    has TWO sources: EXTERNAL clipboard image (File/Photo/web) AND INTERNAL
+//    copied selection/layer — both Cmd+V, both follow the selection rule.
 //
 //  DECIDED 2026-06-10 — TOOLS: PAINT BUCKET + PEN (Michael):
 //
