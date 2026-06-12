@@ -289,6 +289,23 @@
 //        tools than fit the strip's first screenful, the strip SCROLLS
 //        (horizontal) to reveal the overflow tools — no redesign needed as the
 //        toolbox grows. (Not needed yet; only the layout shell + layers exist.)
+//      • FUTURE — KEYBOARD SHORTCUTS (Michael 2026-06-11): Michael runs the iPad
+//        landscape-locked in a Magic Keyboard AND drives it via Universal Control
+//        (MacBook trackpad + keyboard). So a hardware keyboard is present on the
+//        iPad too -> add Photoshop-style SINGLE-KEY tool shortcuts (V=move, etc.)
+//        for power users. Pointer is also present -> hover tooltips work on iPad.
+//        Not now; noted as a real win once tools are live.
+//      • STATUS / HINT BAR (Michael 2026-06-11): a text bar BELOW THE CANVAS (both
+//        orientations) = the app's single VOICE to the user. PRIMARY PURPOSE: it
+//        solves the NO-HOVER problem on touch — desktop rollover/hover hints have
+//        nowhere to go on touch, so this bar SHOWS the hint when you touch/focus a
+//        tool or element. Shows: (1) TOOL HINTS — e.g. Move -> "drag a layer to
+//        reposition; handles to scale/rotate"; Pen -> "tap to paint, two fingers
+//        to pan"; (2) LIVE STATUS/PROMPTS — "Tap a layer to select", "Generating…",
+//        "Background filled", action confirmations. One consistent place instead
+//        of scattered alerts. BUILDS ON the ActiveToolLabel already shipped (that
+//        strip is the seed). Impl: give each Tool a one-line `hint`; show the
+//        active tool's hint + let the app push status text to the same bar.
 //
 //  TOOL VOCABULARY / CANDIDATE TOOLBOX SET (Michael brainstorm 2026-06-11):
 //    The full set of tools the toolbox should hold. Captured so none is lost;
@@ -367,6 +384,34 @@
 //        SF Symbols — three distinct "place a pre-made mark" tools.
 //      • SYMBOL — pick an SF Symbol from Apple's library.
 //      • IMAGE — import artwork: File / Photo / paste / drag / AI (ImageCreator).
+//      • IMAGE PLAYGROUND (CANDIDATE, Michael 2026-06-11) — promote AI from just
+//        an Image-import source to its OWN tool and/or a LAYER FILTER. Two uses:
+//          (tool)   text/concept -> generate AI art straight onto a layer.
+//          (filter) feed an EXISTING layer's content in as the concept ->
+//                   ImageCreator RESTYLES it (ImagePlaygroundConcept accepts an
+//                   image/drawing input, not just text). "Run a layer through AI."
+//        Rides the existing AI gating (Apple-Intelligence HW + iOS 18.4 / macOS
+//        15.4); graceful-absent on older devices. GLYPH VERIFIED IN SDK 2026-06-11
+//        via NSImage(systemSymbolName:): `apple.image.playground` and `.fill`
+//        EXIST (alternates: wand.and.sparkles / wand.and.stars). NOT committed —
+//        candidate; one tool at a time, this is a later add.
+//        GLYPH-AS-STATE-LIGHT (Michael 2026-06-11): use the OUTLINE/FILL pair as a
+//        status indicator on the toolbox icon — IDLE = outline `…playground`;
+//        SELECTED = the usual accent highlight (like every tool); WORKING = the
+//        `.fill` variant + a color (a "lightbulb on"). Especially valuable because
+//        generation is ASYNC (a few seconds) -> the lit glyph IS the "working,
+//        hang on" feedback (no separate spinner). SwiftUI: `.symbolEffect(.pulse)`
+//        + the .fill variant + a tint while generating. Options still live in the
+//        TOOL INSPECTOR; the toolbox glyph reflects state.
+//        INSPECTOR LAYOUT (Michael 2026-06-11): the tool inspector DIFFERENTIATES
+//        the two modes, each with its OWN TEXT INPUT, distinguished by TARGET:
+//          - IMAGE MAKER box  -> prompt -> generate + drop the product image on a
+//            NEW layer (text-only concept).
+//          - IMAGE FILTER box -> describe the change -> modify the ACTIVE layer:
+//            feed that layer's CURRENT content + the text into ImageCreator so the
+//            AI restyles what's already there (image + text concept).
+//        Same framework, both concept inputs; only the OUTPUT TARGET differs
+//        (new layer vs active layer).
 //      • ZOOM (magnifying glass) — zoom the canvas for precise editing, and PAN
 //        FOLDS IN HERE (Michael 2026-06-11): pan = scroll the VIEW when zoomed in
 //        (two-finger drag / Photoshop Hand-tool style) = NAVIGATION; the content
@@ -971,6 +1016,151 @@
 //    • APP BUNDLE caveat — VERIFY: classic App Store Bundles are for
 //      ONE-TIME-PURCHASE paid apps; subscription apps bundle differently.
 //      Confirm the mechanism with Apple at pricing time. Not now.
+//    • NO "LIGHT" vs "DELUXE" SEPARATE APPS (decided Michael 2026-06-11): the
+//      idea of a free/Light app + a Deluxe app whose only diff is USER-DEFINED
+//      CANVAS SIZE would be a 4.3 DUPLICATE-SPAM risk — two ~95%-identical
+//      binaries differing by one feature is exactly the lite/full pattern Apple
+//      steers away from (use ONE app + IAP, not duplicate apps). INSTEAD: ONE
+//      Icon Producer, with user-defined canvas size as the premium feature.
+//      PRICING — FREE, NOT PAID (Michael 2026-06-11, OVERRIDES the usual paid/
+//      premium internal default for THIS app): Michael does NOT want money here.
+//      The premium feature is unlocked by a FREE REGISTRATION that EXPIRES
+//      ANNUALLY — to keep it the user RE-REGISTERS once a year, and that renewal
+//      screen SHOWCASES Michael's OTHER APPS (portfolio cross-promo = the "value
+//      exchange" in place of dollars). NOT a StoreKit subscription (those are
+//      paid) — it's a free account/entitlement with a 1-year expiry + a feature
+//      flag. Core app works WITHOUT registering (only the extra feature is gated
+//      -> 5.1.1-safe). Lapse = premium relocks, rest still works. Apple-OK:
+//      promoting your OWN apps (links to their App Store pages) is allowed; the
+//      rule only bites on gating CORE function or hosting OTHER devs' apps.
+//      OPEN FORK: (A) lightweight DEVICE-LOCAL annual "see our apps to renew"
+//      tap — no accounts / no PII -> minimal compliance; or (B) a REAL account
+//      (Sign in with Apple) to count/contact users -> adds privacy policy +
+//      in-app account deletion (5.1.1(v)). Decide by the goal: portfolio exposure
+//      (lean A) vs building a user list (B).
+//      SIGN IN WITH APPLE DETAIL (Michael leaning B 2026-06-11 — wants a welcome
+//      email): SIWA is a FULLY IN-APP flow (Face/Touch ID) — NO website. Data it
+//      returns: a STABLE unique user ID (team-scoped -> count/recognize users);
+//      an EMAIL (user picks real OR Hide My Email relay — either is deliverable);
+//      and NAME (only if requested, only on FIRST sign-in). ⚠️ EMAIL + NAME come
+//      back ONLY on the FIRST sign-in — capture+store them then. WELCOME EMAIL:
+//      works to real or relay, BUT to email a Hide-My-Email relay you must first
+//      REGISTER YOUR SENDER domain/email with Apple ("Sign in with Apple for
+//      Email Communication") or relay mail BOUNCES. COST of B: needs a small
+//      BACKEND (server + DB to store registrations) + an EMAIL SERVICE to send
+//      (SIWA gives the address, not the sending) + privacy policy + in-app
+//      account deletion. A avoids all that but learns nothing about who registered.
+//      DECISION + STAGING (Michael 2026-06-11): Sign in with Apple = the GATE TO
+//      FULL ACCESS. Built in TWO STAGES:
+//        • STAGE 1 — LOCAL (now, no backend): SIWA is an ON-DEVICE flow; on a
+//          successful sign-in, store the credential/user-id LOCALLY (Keychain)
+//          and unlock the app. No server needed -> we can build the gate today,
+//          before any infrastructure exists. "Full access" for now = the whole
+//          app (premium tiers not built yet).
+//        • STAGE 2 — BACKEND (later): wire the registration to the WordPress DB
+//          (record the user, send the welcome email, run the annual renewal +
+//          app-catalog cross-promo) once the host exists.
+//        ⚠️ ETHICS + 5.1.1 (Michael 2026-06-11) — CORRECTION: do NOT justify the
+//        gate with cloud sync. The user ALREADY PAYS APPLE for iCloud, so locking
+//        sync behind OUR registration = charging twice for what's already theirs
+//        = unethical. So: the local editor core AND any iCloud sync stay FREE/
+//        UNGATED (no registration). Registration unlocks only what's GENUINELY
+//        OURS to give — the premium user-defined canvas, future server-side
+//        features we host, the membership/catalog. This is BOTH ethical AND what
+//        5.1.1 wants (don't force login for core function). So "gate to full
+//        access" -> "registration unlocks OUR premium layer," not a wall in front
+//        of the whole app. (Stage-1 local SIWA still fine to build now.)
+//      APP SHELL — SETTINGS + FEEDBACK (Michael 2026-06-11): match his EXISTING
+//        app pattern — a Settings/About area with FEEDBACK ("like they have
+//        been"); MIRROR a sibling app (Shelf-Ready / CryoTunes) rather than
+//        invent a new style; portfolio-link / mailto feedback is fine (see
+//        feedback_apps_may_link_to_portfolio_for_feedback). Include the BLANKET
+//        privacy.html and the Sign-in-with-Apple registration gate (Stage 1
+//        local). FLOW/COMPLIANCE: since SIWA gates FULL access, Feedback / About /
+//        Privacy must be reachable FROM THE SIGN-IN SCREEN too (App Review +
+//        users need support + privacy without an account).
+//      BACKEND OPTIONS for B (Michael 2026-06-11): the registration DB + welcome
+//      email needs a DYNAMIC backend.
+//        • WORDPRESS / MySQL — leans best: app POSTs the SIWA user-id+email to a
+//          WordPress REST endpoint -> stored in its MySQL DB; WordPress also SENDS
+//          the welcome email (wp_mail + an SMTP plugin). ONE box = DB + mailer.
+//          Secure the endpoint (HTTPS + verify the Apple identity token server-
+//          side) and register the WP From-address with Apple's relay service.
+//        • Firebase / Supabase — serverless DB+functions, free tiers, if not WP.
+//        • CloudKit — native/no-server but weak for a visible user list + email.
+//        • ❌ GitHub is NOT a backend — it stores CODE, not a live DB; GitHub Pages
+//          is static (no DB writes / no endpoint). The API-commit hack needs an
+//          embedded write-token (extractable) + isn't concurrency-safe. RULED OUT.
+//          GitHub stays the CODE bridge (MacBook<->minis) only.
+//        DOMAIN STATUS (checked 2026-06-11): fluharty.me currently resolves to
+//        GITHUB PAGES (A records 185.199.108-111.153, server: GitHub.com) = a
+//        STATIC site; NO MX (no email), NOT WordPress (wp-login 404). So the
+//        domain as-pointed can't be the backend. TODO Michael: check GoDaddy "My
+//        Products" for a Web Hosting / Managed-WordPress / cPanel / VPS plan — if
+//        one exists, point a SUBDOMAIN (e.g. api.fluharty.me) at it for the
+//        backend; if domain-only, add hosting or use a BaaS.
+//        DIRECTION (Michael 2026-06-11): leaning toward BUYING a hosting plan
+//        (poss. a 5-yr term) + maybe a CUSTOM DOMAIN. Good call — one Linux/
+//        cPanel or Managed-WordPress host + domain covers ALL launch infra at
+//        once: registration backend (MySQL + REST), welcome-email sender, the
+//        App-Store-REQUIRED privacy-policy + support URLs, and a marketing
+//        landing page. Make sure the plan is Linux/WordPress (MySQL+PHP+email),
+//        not domain-only/static. Term length = pure cost choice (his lane). All
+//        PRE-LAUNCH — does not block building the app's tools.
+//        HOMELAB SELF-HOST OPTION (Michael 2026-06-11): he may have a parallel
+//        GoDaddy MySQL/Linux plan (confirm in My Products) AND/OR could self-host
+//        MySQL on the HOMELAB via the NightGard DDNS. Assessment: self-host is
+//        IDEAL FOR DEV/TESTING (free, build the whole flow against his box; API/
+//        PHP in front of MySQL — never expose MySQL directly; DDNS hostname +
+//        Let's Encrypt TLS for ATS). For PRODUCTION (public users + their emails
+//        on home hardware) flag: internet exposure/attack surface, residential
+//        uptime + ISP often blocks inbound 80/443 & bans servers, scale limits,
+//        PII liability. RECOMMENDATION: homelab for DEV, managed host (the
+//        GoDaddy plan or a cheap VPS) for PRODUCTION. Best of both.
+//        DOMAIN/HOSTING INVENTORY (checked 2026-06-11): owns fluharty.me (-> GitHub
+//        Pages, static) + mybrainconnections in MULTIPLE TLDs (.com -> GoDaddy
+//        registrar-forwarding, catch-all 200, no real WP, no MX; .org/.net don't
+//        resolve). NONE is a live server. Michael thinks he "probably let the
+//        hosting subscriptions EXPIRE" -> assume NO active hosting; just domain
+//        names (verify even those haven't lapsed). So production backend = BUY a
+//        fresh Linux/WordPress plan when we reach the registration feature
+//        (PRE-LAUNCH, long after the app's tools). Homelab-DDNS covers dev. Not
+//        urgent — nothing lost; spin up hosting at launch time.
+//        WHOIS (2026-06-11): mybrainconnections.COM REGISTERED via GoDaddy thru
+//        2034-06-08 (long-term lock — solid asset). .INFO + .APP also show
+//        registered but are NOT Michael's (he confirmed he NEVER registered a
+//        .app; both are third parties). So the ONLY mybrainconnections name he
+//        owns is .COM. .net/.org/.me/.co/.us/.io LAPSED. fluharty.me still active
+//        (GitHub Pages, static).
+//        UMBRELLA DOMAIN — INTENDED: fluharty.app (Michael 2026-06-11). Verified
+//        AVAILABLE (GoDaddy ~$19.99 first yr / ~$27.99 renew; corrected via
+//        whois.nic.google after a bad first lookup falsely said "taken"). Matches
+//        the fluharty.me brand; .app is HTTPS-only (we want that); same GoDaddy
+//        account as the .com. Would host the app-portfolio landing + the free-
+//        registration "see our apps" catalog + privacy/support pages + backend.
+//        fluharty.com is OWNED BY TUCOWS — it's part of their SURNAME VANITY-EMAIL
+//        service (NetIdentity/Mailbank lineage): Tucows holds last-name domains and
+//        leases vanity addresses by subscription. MICHAEL SUBSCRIBES -> he has
+//        mike@fluharty.com + michael@fluharty.com (personal email). That's why the
+//        domain is locked since 1996 and never drops — it's Tucows' product, not
+//        for sale. He does NOT control its DNS, so it CAN'T host the app site/
+//        backend or be a Sign-in-with-Apple relay sender. Keep the personal
+//        addresses; the APP uses fluharty.app (fully owned/controlled).
+//        NOT yet purchased — Michael's call.
+//        nightgard.app / iconproducer.app also available if a studio/per-app
+//        brand is preferred later.
+//        fluharty.NET — LIKELY ALREADY OWNED by Michael (WHOIS 2026-06-11: GoDaddy
+//        registrar + "Domains By Proxy" = GoDaddy privacy proxy, AZ; created 2017,
+//        RENEWED April 2026, on GoDaddy default nameservers/parked). All signs =
+//        his (his registrar + privacy + fresh renewal, likely auto-renew). Confirm
+//        in GoDaddy My Products. IF his, it's a domain he ALREADY OWNS + FULLY
+//        CONTROLS (DNS/MX/zone) — unlike .com (Tucows) — so it could host the app
+//        site/email/backend NOW, free, no purchase. Tradeoff: .net is older/generic
+//        vs .app's modern app-branding. Could use BOTH (.app public brand, .net
+//        infra) or start on .net.
+//        BRAND FORK (open, Michael 2026-06-11): umbrella = PERSONAL name
+//        (fluharty.app/.net) vs STUDIO brand (NightGard — already his folder/DDNS
+//        identity; nightgard.app available) vs a coined name. Undecided.
 //
 //  DEPLOYMENT TARGET (Michael 2026-06-10): plan = ship targeting iOS 26-or-LOWER
 //  first, then a fast iOS-27 upgrade pass right after submitting (fits the

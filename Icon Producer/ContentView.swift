@@ -22,6 +22,9 @@
 //
 
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct ContentView: View {
     @State private var document = IconDocument.newDefault()
@@ -46,19 +49,32 @@ struct ContentView: View {
                                           selection: $bottomPanel)
                 }
             } else {
-                // Landscape / wide (Mac, iPad): original side-by-side, unchanged.
+                // Landscape / wide: canvas | tool rail | inspector | layers — all
+                // visible at once, using the gap the square canvas leaves to the
+                // right (Michael 2026-06-11: iPad is landscape-locked in a Magic
+                // Keyboard, so landscape needs full tooling, not the bare layout).
                 HStack(spacing: 0) {
                     canvasArea
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     Divider()
+                    ToolRail(activeTool: $activeTool)
+                    Divider()
+                    ToolInspector(document: document,
+                                  activeTool: activeTool,
+                                  activeLayerID: activeLayerID)
+                        .frame(width: 240)
+                    Divider()
                     LayerPanel(document: document, activeLayerID: $activeLayerID)
-                        .frame(width: 280)
+                        .frame(width: 240)
                 }
             }
         }
     }
 
     private var canvasArea: some View {
+        // Zoom/pan PARKED 2026-06-11 (ZoomableCanvas left in the file, unused):
+        // the UIScrollView approach fought Auto Layout so pinch didn't zoom.
+        // Re-wire when the PIXEL PEN needs zoom and we can iterate it properly.
         CanvasView(document: document,
                    activeLayerID: activeLayerID,
                    showTransformBox: activeTool == .move)
@@ -119,6 +135,92 @@ struct ActiveToolLabel: View {
     }
 }
 
+// MARK: - Tool rail (landscape)
+
+/// Vertical version of the tool strip for the wide/landscape layout — sits in the
+/// gap the square canvas leaves, hugging the canvas's right edge. Scrolls
+/// vertically when there are more tools than fit.
+struct ToolRail: View {
+    @Binding var activeTool: Tool
+
+    var body: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 4) {
+                ForEach(Tool.allCases) { tool in
+                    Button { activeTool = tool } label: {
+                        Image(systemName: tool.systemImage)
+                            .font(.system(size: 18))
+                            .frame(width: 44, height: 44)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(activeTool == tool ? Color.accentColor.opacity(0.2)
+                                                             : Color.clear)
+                            )
+                            .foregroundStyle(activeTool == tool ? Color.accentColor : Color.primary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(tool.title)
+                    .accessibilityLabel(tool.title)
+                }
+            }
+            .padding(.vertical, 6)
+        }
+        .frame(width: 56)
+    }
+}
+
+// MARK: - Tool inspector (shared)
+
+/// The active tool's inspector — Move's controls, or a placeholder for tools not
+/// built yet. Reused by BOTH the portrait swipe panel and the landscape column.
+struct ToolInspector: View {
+    let document: IconDocument
+    let activeTool: Tool
+    let activeLayerID: IconLayer.ID?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Tool-name header: the inspector names the active tool, so you never
+            // need hover to know which tool you're on (Michael 2026-06-11).
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: activeTool.systemImage)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(activeTool.title).font(.headline)
+                    // "Duplicate with a purpose" (Michael 2026-06-11): the active
+                    // layer is also highlighted in the list, but spelling it out
+                    // here CONFIRMS which layer you're about to act on.
+                    if let name = activeLayerName {
+                        Text("Layer: \(name)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+            Divider()
+            content
+        }
+    }
+
+    private var activeLayerName: String? {
+        guard let id = activeLayerID else { return nil }
+        return document.layers.first(where: { $0.id == id })?.name
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if activeTool == .move {
+            MoveTransformInspector(document: document, activeLayerID: activeLayerID)
+        } else {
+            ToolInspectorPlaceholder(tool: activeTool)
+        }
+    }
+}
+
 // MARK: - Bottom swipe panel
 
 /// The three lower-frequency surfaces under the tool strip. A segmented control
@@ -167,13 +269,10 @@ enum BottomPanel: String, CaseIterable, Identifiable {
             }
         }
 
-        @ViewBuilder
         private var toolPage: some View {
-            if activeTool == .move {
-                MoveTransformInspector(document: document, activeLayerID: activeLayerID)
-            } else {
-                ToolInspectorPlaceholder(tool: activeTool)
-            }
+            ToolInspector(document: document,
+                          activeTool: activeTool,
+                          activeLayerID: activeLayerID)
         }
 
         private var layersPage: some View {
@@ -197,9 +296,7 @@ struct ToolInspectorPlaceholder: View {
             Image(systemName: tool.systemImage)
                 .font(.system(size: 34))
                 .foregroundStyle(.secondary)
-            Text(tool.title)
-                .font(.headline)
-            Text("Tool inspector — coming soon")
+            Text("Inspector — coming soon")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
@@ -243,8 +340,6 @@ struct MoveTransformInspector: View {
     var body: some View {
         if let idx = index {
             VStack(alignment: .leading, spacing: 18) {
-                Text(document.layers[idx].name).font(.headline)
-
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Scale  \(Int(document.layers[idx].transform.scale * 100))%")
                         .font(.subheadline)
@@ -311,7 +406,7 @@ struct CanvasView: View {
                     }
                 }
                 if showTransformBox, let idx = activeIndex {
-                    transformBox(side: side, index: idx)
+                    TransformBox(document: document, index: idx, side: side)
                 }
             }
             .frame(width: side, height: side)
@@ -357,10 +452,20 @@ struct CanvasView: View {
         }
     }
 
-    /// The draggable transform box for the active layer (Move tool). Reflects the
-    /// layer's transform (center / scale / rotation); dragging updates the center.
-    private func transformBox(side: CGFloat, index idx: Int) -> some View {
-        let t = document.layers[idx].transform
+}
+
+/// The draggable transform box for the active layer (Move tool). Reflects the
+/// layer's transform (center / scale / rotation). Drag GRABS and moves RELATIVE
+/// to the start, so a tap doesn't jump the layer — only a real drag moves it
+/// (Michael 2026-06-11: "it moves when touched").
+struct TransformBox: View {
+    let document: IconDocument
+    let index: Int
+    let side: CGFloat
+    @State private var startCenter: CGPoint?
+
+    var body: some View {
+        let t = document.layers[index].transform
         let boxSide = max(24, t.scale * side)
         return Rectangle()
             .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
@@ -372,10 +477,13 @@ struct CanvasView: View {
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
                     .onChanged { value in
-                        let nx = min(max(value.location.x / side, 0), 1)
-                        let ny = min(max(value.location.y / side, 0), 1)
-                        document.layers[idx].transform.center = CGPoint(x: nx, y: ny)
+                        let start = startCenter ?? document.layers[index].transform.center
+                        if startCenter == nil { startCenter = start }
+                        let nx = min(max(start.x + value.translation.width / side, 0), 1)
+                        let ny = min(max(start.y + value.translation.height / side, 0), 1)
+                        document.layers[index].transform.center = CGPoint(x: nx, y: ny)
                     }
+                    .onEnded { _ in startCenter = nil }
             )
     }
 }
@@ -518,6 +626,74 @@ struct LayerRow: View {
         }
     }
 }
+
+// MARK: - Zoom / pan (Procreate-style: 1 finger = tool, 2 = pan, pinch = zoom)
+
+/// Wraps the canvas so pinch zooms and two-finger drag pans, while a single
+/// finger still reaches the active tool. iOS uses a UIScrollView (pan set to a
+/// 2-finger minimum); other platforms just show the content for now.
+struct ZoomableCanvas<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        #if os(iOS)
+        ZoomableScrollView { content }
+        #else
+        content
+        #endif
+    }
+}
+
+#if os(iOS)
+struct ZoomableScrollView<Content: View>: UIViewRepresentable {
+    @ViewBuilder var content: Content
+
+    func makeUIView(context: Context) -> UIScrollView {
+        let scroll = UIScrollView()
+        scroll.delegate = context.coordinator
+        scroll.minimumZoomScale = 1
+        scroll.maximumZoomScale = 8
+        scroll.bouncesZoom = true
+        scroll.showsHorizontalScrollIndicator = false
+        scroll.showsVerticalScrollIndicator = false
+        scroll.delaysContentTouches = false
+        scroll.contentInsetAdjustmentBehavior = .never
+        scroll.backgroundColor = .clear
+        scroll.panGestureRecognizer.minimumNumberOfTouches = 2 // 1 finger -> tool
+
+        let hosted = context.coordinator.hosting.view!
+        hosted.backgroundColor = .clear
+        hosted.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(hosted)
+        NSLayoutConstraint.activate([
+            hosted.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            hosted.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            hosted.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            hosted.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            hosted.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            hosted.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor),
+        ])
+        return scroll
+    }
+
+    func updateUIView(_ uiView: UIScrollView, context: Context) {
+        context.coordinator.hosting.rootView = content
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(hosting: UIHostingController(rootView: content))
+    }
+
+    final class Coordinator: NSObject, UIScrollViewDelegate {
+        let hosting: UIHostingController<Content>
+        init(hosting: UIHostingController<Content>) {
+            self.hosting = hosting
+            hosting.view.backgroundColor = .clear
+        }
+        func viewForZooming(in scrollView: UIScrollView) -> UIView? { hosting.view }
+    }
+}
+#endif
 
 // MARK: - Helpers
 
