@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<!--
+  Icon Producer — Ship Roadmap (amber proof doc; outline-numbered, status-badged).
+  Companion to Icon-Producer-Ship-Checklist.html (the printer-friendly one).
+  Convention: apartment Workshop/AMBER-HTML-TEMPLATE.html + feedback_amber_html_auto_refresh.md
+  React by outline number in chat; I flip badges Q -> REC -> LOCKED -> COMPLETE as we go.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Icon-Producer-Roadmap-DRAFT-2026-06-14.html</title>
+<script>
+  // Auto-refresh every 60s with scroll-position preservation (Michael's rule).
+  // See memory: feedback_amber_html_auto_refresh.md
+  window.addEventListener('load', () => {
+    const y = sessionStorage.getItem('scroll-' + location.pathname);
+    if (y) window.scrollTo(0, parseInt(y, 10));
+  });
+  window.addEventListener('beforeunload', () => {
+    sessionStorage.setItem('scroll-' + location.pathname, window.scrollY);
+  });
+  setTimeout(() => location.reload(), 60000);
+</script>
+<style>
+  html, body { background: #000000; color: #ffb84d; }
+  body {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 17pt;
+    line-height: 1.45;
+    max-width: 9.5in;
+    margin: 0 auto;
+    padding: 1em 1.5em;
+    box-sizing: border-box;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  .filename {
+    color: #ffb84d; font-size: 14pt; opacity: 0.7;
+    border-bottom: 1px solid #5a3a00; padding-bottom: 0.2em; margin-bottom: 1em;
+  }
+  h1 {
+    font-size: 23pt; border-bottom: 2px solid #ffb84d;
+    padding-bottom: 0.2em; margin-bottom: 0.4em; color: #ffcc66;
+  }
+  h2 {
+    font-size: 18pt; margin-top: 1.2em; margin-bottom: 0.3em; color: #ffcc66;
+    border-bottom: 1px solid #5a3a00; padding-bottom: 0.1em;
+  }
+  .legend {
+    background: #1a1000; border-left: 3px solid #ffb84d;
+    padding: 0.5em 0.9em; margin: 0.4em 0 1em 0; font-size: 14pt; line-height: 1.6;
+  }
+  /* Outline rows */
+  .L {
+    display: block; margin: 0; padding: 0.12em 0 0.12em 4.6em; overflow-wrap: break-word;
+  }
+  .L.sub  { padding-left: 7.2em; font-size: 15.5pt; }
+  .num {
+    display: inline-block; width: 3.8em; text-align: right;
+    margin-left: -4.6em; margin-right: 0.8em; color: #997744; user-select: text;
+  }
+  .L.sub .num { width: 6.4em; margin-left: -7.2em; color: #806633; }
+  /* Status badges */
+  .status {
+    display: inline-block; font-size: 12pt; padding: 0.05em 0.5em;
+    border: 1px solid #5a3a00; border-radius: 3px; margin-right: 0.4em; color: #ffcc66;
+    vertical-align: 1px;
+  }
+  .question { background: #1a1a00; color: #ffff66; border-color: #4a4a00; }   /* Q */
+  .recommend{ background: #003322; color: #66ffcc; border-color: #006644; }   /* REC */
+  .locked   { background: #002233; color: #66ccff; border-color: #004466; }   /* LOCKED IN */
+  .complete { background: #0a3d1a; color: #8cff9e; border-color: #1a7f37; }   /* COMPLETE */
+  .hardstop { background: #330000; color: #ff6666; border-color: #663333; }   /* STOP */
+  .blank { height: 0.5em; }
+  .decide { color: #ffd080; }
+  code { background: #1a0f00; padding: 0.05em 0.3em; color: #ffd080; overflow-wrap: anywhere; }
+  .note { color: #c9924d; font-size: 14pt; }
+</style>
+</head>
+<body>
+
+<div class="filename">Icon-Producer-Roadmap-DRAFT-2026-06-14.html</div>
+
+<h1>Icon Producer — Ship Roadmap</h1>
+
+<div class="legend">
+<strong>Status workflow (I flip these as we decide):</strong><br>
+<span class="status question">Q</span> QUESTION — need your answer before this can move<br>
+<span class="status recommend">REC</span> RECOMMENDED — my proposed call, awaiting your lock-in<br>
+<span class="status locked">LOCKED</span> LOCKED IN — you've decided / it's a standing rule; proceeding<br>
+<span class="status complete">DONE</span> COMPLETE — finished &amp; verified<br>
+<span class="status hardstop">STOP</span> HARD CONSTRAINT — a fact we route around, not negotiate<br>
+<br>
+Auto-refreshes every 60s, keeps your scroll spot. React by <strong>outline number</strong> (e.g. "lock 1.2", "1 is B"); refresh any time to pull my latest.
+</div>
+
+<h2>0 — Context (two hard realities)</h2>
+<span class="L"><span class="num">0.1</span> <span class="status locked">LOCKED</span> Outputs specified — Export (PNG folder), Save (package), Share (flat PNG). <span class="note">Spec locked; not yet coded. Building is the next step.</span></span>
+<span class="L"><span class="num">0.2</span> <span class="status locked">LOCKED</span> Build/test here; <strong>archive + submit on the Mac mini</strong> (released Xcode 26 / macOS 26 — beta can't upload). See 7.</span>
+<span class="L"><span class="num">0.3</span> <span class="status locked">LOCKED</span> <strong>Icon Producer is a TOOL only</strong> — the user creates the icon; the app never autonomously generates one (AI is user-invoked &amp; assistive, not automatic).</span>
+<span class="L"><span class="num">0.4</span> <span class="status locked">LOCKED</span> <strong>New document = three BLANK layers</strong> (Light bg, Dark bg, content) — empty. No example icon, no test star. The user fills them.</span>
+
+<h2>1 — v1 scope <span class="note">(LOCKED — this is the path we've been on)</span></h2>
+<span class="L"><span class="num">1</span> <span class="status locked">LOCKED</span> <strong>v1 = manual editor first</strong> — Backgrounds + Symbol/Text/Image + export. AI stays in the plan as the v1.1 marquee, sequenced after (not cut).</span>
+<span class="L sub"><span class="num">1.1</span> AI (v1.1) — <span class="note">Image Playground as a TOOL + inspector: (a) filter an existing layer, (b) generate a new layer. Hardware-gated; non-AI fallback when it lands.</span></span>
+<span class="L blank"></span>
+<span class="L"><span class="num">1.2</span> <span class="decide">Locked 2026-06-14. Remaining content question moves to 2.2 — which manual tool(s) beyond backgrounds in v1.</span></span>
+
+<h2>2 — Build the v1 feature core <span class="note">(on the Air; test on device; commit+push on green)</span></h2>
+<span class="L"><span class="num">2.1</span> <span class="status locked">LOCKED</span> <strong>Paint Bucket v1</strong> — user fills the Light and Dark background layers with their OWN chosen color (not preset white/black). Tool #2, where you're parked.</span>
+<span class="L"><span class="num">2.2</span> <span class="status locked">LOCKED</span> <strong>Content path for v1 = Symbol</strong> (SF Symbols). Text + Image follow. AI is v1.1.</span>
+<span class="L"><span class="num">2.3</span> <span class="status locked">LOCKED</span> <strong>EXPORT</strong> — flatten to shipping icons. Deliverable: a <strong>FOLDER of every required PNG size, clearly named</strong>. Drag the PNGs into the AppIcon wells in Xcode yourself. Non-negotiable for v1.</span>
+<span class="L sub"><span class="num">2.3.1</span> <span class="status locked">LOCKED</span> <strong>No tool-written <code>Contents.json</code></strong> (your call — you don't trust it). Icon Producer emits PNGs only; Xcode authors its own JSON.</span>
+<span class="L sub"><span class="num">2.3.2</span> <span class="status locked">LOCKED</span> Both <strong>iOS + macOS</strong> size sets (Mac is a target — always has been). Exact sizes verified vs the Xcode 27 template at build time.</span>
+<span class="L sub"><span class="num">2.3.3</span> <span class="status locked">LOCKED</span> Drop single-1024 (Share already gives a flat 1024 PNG). Keep Icon Composer <strong><code>.icon</code></strong> companion — the layered format, not covered by Share.</span>
+<span class="L"><span class="num">2.4</span> <span class="status locked">LOCKED</span> <strong>SAVE / SAVE AS</strong> — write an editable <strong>package</strong> (file wrapper) holding ALL layers + the full edit history; reopen to keep editing. Distinct from Export. Versioned schema (cf. <code>.tmod</code>). This is where "history persists across reopen" lives.</span>
+<span class="L sub"><span class="num">2.4.1</span> <span class="status locked">LOCKED</span> <strong>Document-based</strong>, packages saved to <strong>iCloud Drive</strong> (files the user owns). Drop the stock SwiftData store. iCloud never gated.</span>
+<span class="L sub"><span class="num">2.4.2</span> <span class="status locked">LOCKED</span> Save is <strong>v1</strong> — it's the foundation of a document-based app, not optional.</span>
+<span class="L"><span class="num">2.5</span> <span class="status locked">LOCKED</span> <strong>SHARE SHEET</strong> — share a FLAT image of the VISIBLE layers, snapshotted the moment share is tapped (respects eyeball visibility). Quick/casual output via the system share sheet; distinct from Export &amp; Save.</span>
+<span class="L sub"><span class="num">2.5.1</span> <span class="status locked">LOCKED</span> Format = <strong>PNG</strong> (lossless + alpha; JPEG can't do transparency &amp; mushes sharp edges). Applies to Export too.</span>
+<span class="L sub"><span class="num">2.5.2</span> <span class="status locked">LOCKED</span> Resolution = <strong>1024</strong> — you edit at 1024, it saves at 1024.</span>
+<span class="L"><span class="num">2.6</span> <span class="status locked">LOCKED</span> No-AI fallback = simply <strong>don't show the AI tool</strong> on non-capable devices. (v1.1 concern — AI isn't in v1.)</span>
+<span class="L"><span class="num">2.7</span> <span class="status locked">LOCKED</span> Real-device test pass — iPhone + iPad + Mac ("don't ship untested"). <span class="note">(Test-star removal is covered by 0.4 — three blank layers.)</span></span>
+
+<h2>3 — Platforms</h2>
+<span class="L"><span class="num">3</span> <span class="status locked">LOCKED</span> <strong>iOS + macOS, simultaneously</strong> (the path we've been on). visionOS stays template-default — untested, unclaimed.</span>
+
+<h2>4 — Icon Producer's own app icon</h2>
+<span class="L"><span class="num">4</span> <span class="status locked">LOCKED</span> Light + dark only, <strong>no tinted</strong> (your rule). <span class="note">Dogfood Icon Producer to make it, once content + export work.</span></span>
+
+<h2>5 — App Store Connect mechanics <span class="note">(runs in parallel with 2 — independent of code)</span></h2>
+<span class="L"><span class="num">5.1</span> <span class="status complete">DONE</span> Bundle ID <code>com.nightgard.Icon-Producer</code> · Team <code>3X3F6UJ44H</code> · automatic signing.</span>
+<span class="L"><span class="num">5.2</span> <span class="status recommend">REC</span> Register the App ID + <strong>create the ASC app record</strong>.</span>
+<span class="L"><span class="num">5.3</span> <span class="status recommend">REC</span> Screenshots — 1242×2688 (or 1284×2778); add iPad sizes if iPad ships (see 3).</span>
+<span class="L"><span class="num">5.4</span> <span class="status recommend">REC</span> Privacy nutrition labels + privacy URL <span class="note">(blanket <code>privacy.html</code> covers it)</span>.</span>
+<span class="L"><span class="num">5.5</span> <span class="status locked">LOCKED</span> Listing — English-only, Americas-only. <span class="note">Name / subtitle / description / keywords / category / support URL still to write.</span></span>
+<span class="L"><span class="num">5.6</span> <span class="status recommend">REC</span> Monetization — paid/subscription premium model: StoreKit products + ASC products + agreements / banking / tax.</span>
+
+<h2>6 — Registration gate</h2>
+<span class="L"><span class="num">6.1</span> <span class="status locked">LOCKED</span> Sign in with Apple, <strong>staged LOCAL first</strong>; gates <em>our</em> premium value only — <strong>never</strong> iCloud sync (already paid to Apple).</span>
+<span class="L"><span class="num">6.2</span> <span class="status locked">LOCKED</span> Sign in with Apple <strong>in v1</strong> (local; backend matching comes later).</span>
+
+<h2>7 — Cut over &amp; submit</h2>
+<span class="L"><span class="num">7</span> <span class="status locked">LOCKED</span> On a Mac mini (Xcode 26 / macOS 26): <strong>archive → upload → submit for review</strong>. TestFlight not in your toolkit → direct submit.</span>
+
+<h2>Open questions blocking progress</h2>
+<span class="L"><span class="num">Q1</span> <span class="status complete">DONE</span> Scope — manual editor first. (item 1)</span>
+<span class="L"><span class="num">Q2</span> <span class="status complete">DONE</span> Content path = Symbol. (item 2.2)</span>
+<span class="L"><span class="num">Q3</span> <span class="status complete">DONE</span> Platforms — iOS + macOS. (item 3)</span>
+<span class="L"><span class="num">Q4</span> <span class="status complete">DONE</span> Sign in with Apple in v1 (local). (item 6.2)</span>
+
+<div class="filename" style="margin-top: 2em; border-top: 1px solid #5a3a00; border-bottom: none; padding-top: 0.2em;">Icon-Producer-Roadmap-DRAFT-2026-06-14.html</div>
+
+</body>
+</html>
