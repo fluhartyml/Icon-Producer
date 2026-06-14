@@ -40,6 +40,9 @@ struct ContentView: View {
     /// Export (roadmap 2.3): the rendered PNG folder + the exporter sheet flag.
     @State private var exportBundle: IconExportBundle?
     @State private var showExporter = false
+    /// Share (roadmap 2.5): a flat 1024 PNG of the visible layers, snapshot at tap.
+    @State private var shareURL: URL?
+    @State private var showShare = false
 
     var body: some View {
         GeometryReader { geo in
@@ -87,11 +90,45 @@ struct ContentView: View {
                 }
                 .help("Export the icon as a folder of PNG sizes")
             }
+            ToolbarItem(placement: .secondaryAction) {
+                Button { prepareShare() } label: {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+                .help("Share a flat PNG of the visible layers")
+            }
         }
         .fileExporter(isPresented: $showExporter,
                       document: exportBundle,
                       contentType: .folder,
                       defaultFilename: exportFilename) { _ in }
+        .sheet(isPresented: $showShare) {
+            if let url = shareURL {
+                #if canImport(UIKit)
+                ActivityView(items: [url])
+                #else
+                VStack(spacing: 16) {
+                    ShareLink(item: url) { Label("Share Icon", systemImage: "square.and.arrow.up") }
+                    Button("Done") { showShare = false }
+                }
+                .padding(40)
+                #endif
+            }
+        }
+    }
+
+    /// Render a flat 1024 PNG of the visible layers NOW and present the share sheet.
+    private func prepareShare() {
+        guard let data = ContentView.renderIconPNG(document: document, px: 1024) else { return }
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(exportFilename)
+            .appendingPathExtension("png")
+        do {
+            try data.write(to: url)
+            shareURL = url
+            showShare = true
+        } catch {
+            // Fail-safe: surface nothing destructive; just don't present a broken share.
+        }
     }
 
     private var exportFilename: String {
@@ -1020,6 +1057,17 @@ struct IconExportBundle: FileDocument {
         return FileWrapper(directoryWithFileWrappers: wrappers)
     }
 }
+
+#if canImport(UIKit)
+/// Hosts the system share sheet (roadmap 2.5) for the rendered PNG file URL.
+struct ActivityView: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+}
+#endif
 
 #Preview {
     ContentView(document: .newDefault())
