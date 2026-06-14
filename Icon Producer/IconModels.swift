@@ -98,6 +98,18 @@ struct IconLayer: Identifiable, Codable {
         }
     }
 
+    /// This layer's background sub-role (light/dark), or nil if it's a content layer.
+    var backgroundRole: BackgroundRole? {
+        if case .background(let r, _) = role { return r }
+        return nil
+    }
+
+    /// Paint Bucket v1 (roadmap 2.1): set a BACKGROUND layer's solid fill. Pass nil
+    /// to clear it back to blank. No-op on content layers.
+    mutating func setBackgroundFill(_ hex: String?) {
+        if case .background(let r, _) = role { role = .background(r, fillHex: hex) }
+    }
+
     /// SF Symbol name used to badge this layer in the layer list.
     var displaySymbolName: String {
         switch role {

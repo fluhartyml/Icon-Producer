@@ -22,8 +22,10 @@
 //
 
 import SwiftUI
-#if os(iOS)
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
 #endif
 
 struct ContentView: View {
@@ -31,6 +33,8 @@ struct ContentView: View {
     @State private var activeTool: Tool = .move
     @State private var activeLayerID: IconLayer.ID?
     @State private var bottomPanel: BottomPanel = .layers
+    /// Paint Bucket's current colour (roadmap 2.1) — the user's own light/dark choice.
+    @State private var fillColor: Color = .white
 
     var body: some View {
         GeometryReader { geo in
@@ -46,7 +50,8 @@ struct ContentView: View {
                     BottomPanel.PanelView(document: document,
                                           activeTool: activeTool,
                                           activeLayerID: $activeLayerID,
-                                          selection: $bottomPanel)
+                                          selection: $bottomPanel,
+                                          fillColor: $fillColor)
                 }
             } else {
                 // Landscape / wide: canvas | tool rail | inspector | layers — all
@@ -61,7 +66,8 @@ struct ContentView: View {
                     Divider()
                     ToolInspector(document: document,
                                   activeTool: activeTool,
-                                  activeLayerID: activeLayerID)
+                                  activeLayerID: activeLayerID,
+                                  fillColor: $fillColor)
                         .frame(width: 240)
                     Divider()
                     LayerPanel(document: document, activeLayerID: $activeLayerID)
@@ -77,7 +83,9 @@ struct ContentView: View {
         // Re-wire when the PIXEL PEN needs zoom and we can iterate it properly.
         CanvasView(document: document,
                    activeLayerID: activeLayerID,
-                   showTransformBox: activeTool == .move)
+                   showTransformBox: activeTool == .move,
+                   activeTool: activeTool,
+                   fillColor: fillColor)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding()
             .background(Color(white: 0.5).opacity(0.12))
@@ -177,6 +185,7 @@ struct ToolInspector: View {
     @ObservedObject var document: IconDocument
     let activeTool: Tool
     let activeLayerID: IconLayer.ID?
+    @Binding var fillColor: Color
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -213,11 +222,67 @@ struct ToolInspector: View {
 
     @ViewBuilder
     private var content: some View {
-        if activeTool == .move {
+        switch activeTool {
+        case .move:
             MoveTransformInspector(document: document, activeLayerID: activeLayerID)
-        } else {
+        case .fill:
+            PaintBucketInspector(document: document,
+                                 activeLayerID: activeLayerID,
+                                 fillColor: $fillColor)
+        default:
             ToolInspectorPlaceholder(tool: activeTool)
         }
+    }
+}
+
+// MARK: - Paint Bucket inspector (Tool #2)
+
+/// Paint Bucket v1 (roadmap 2.1): pick a colour, then tap a BACKGROUND layer's
+/// canvas to fill it — the user makes their own Light and Dark backgrounds. The
+/// "Fill" button applies without a canvas tap (and works on Mac / for VoiceOver).
+struct PaintBucketInspector: View {
+    @ObservedObject var document: IconDocument
+    let activeLayerID: IconLayer.ID?
+    @Binding var fillColor: Color
+
+    private var activeIndex: Int? {
+        guard let id = activeLayerID else { return nil }
+        return document.layers.firstIndex(where: { $0.id == id })
+    }
+
+    private var activeIsBackground: Bool {
+        guard let i = activeIndex else { return false }
+        return document.layers[i].backgroundRole != nil
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ColorPicker("Fill colour", selection: $fillColor, supportsOpacity: false)
+
+            if activeIsBackground {
+                Button {
+                    fillActiveBackground()
+                } label: {
+                    Label("Fill Layer", systemImage: "drop.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                Text("Or tap the canvas to pour.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Select a background layer (Light or Dark) to fill it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func fillActiveBackground() {
+        guard let i = activeIndex else { return }
+        document.layers[i].setBackgroundFill(fillColor.hexString())
     }
 }
 
@@ -238,6 +303,7 @@ enum BottomPanel: String, CaseIterable, Identifiable {
         // (PanelView is the bottom swipe panel; it observes the document too.)
         @Binding var activeLayerID: IconLayer.ID?
         @Binding var selection: BottomPanel
+        @Binding var fillColor: Color
 
         var body: some View {
             VStack(spacing: 0) {
@@ -273,7 +339,8 @@ enum BottomPanel: String, CaseIterable, Identifiable {
         private var toolPage: some View {
             ToolInspector(document: document,
                           activeTool: activeTool,
-                          activeLayerID: activeLayerID)
+                          activeLayerID: activeLayerID,
+                          fillColor: $fillColor)
         }
 
         private var layersPage: some View {
@@ -390,10 +457,20 @@ struct CanvasView: View {
     @ObservedObject var document: IconDocument
     var activeLayerID: IconLayer.ID? = nil
     var showTransformBox: Bool = false
+    var activeTool: Tool = .move
+    var fillColor: Color = .white
 
     private var activeIndex: Int? {
         guard let id = activeLayerID else { return nil }
         return document.layers.firstIndex(where: { $0.id == id })
+    }
+
+    /// Paint Bucket pour: with Fill active, tapping the canvas fills the active
+    /// BACKGROUND layer with the current colour (roadmap 2.1). No-op otherwise.
+    private func pourIfFilling() {
+        guard activeTool == .fill, let idx = activeIndex,
+              document.layers[idx].backgroundRole != nil else { return }
+        document.layers[idx].setBackgroundFill(fillColor.hexString())
     }
 
     var body: some View {
@@ -413,6 +490,8 @@ struct CanvasView: View {
             .frame(width: side, height: side)
             .coordinateSpace(name: "canvas")
             .overlay(Rectangle().stroke(Color.secondary.opacity(0.4), lineWidth: 1))
+            .contentShape(Rectangle())
+            .onTapGesture { pourIfFilling() }
             .frame(maxWidth: .infinity, maxHeight: .infinity) // center in the area
         }
     }
@@ -708,6 +787,20 @@ extension Color {
                      red: Double((value >> 16) & 0xFF) / 255,
                      green: Double((value >> 8) & 0xFF) / 255,
                      blue: Double(value & 0xFF) / 255)
+    }
+
+    /// sRGB "#RRGGBB" for persisting a chosen colour (alpha dropped — backgrounds
+    /// are opaque). Returns nil if the platform colour can't be resolved.
+    func hexString() -> String? {
+        #if canImport(UIKit)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        guard UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a) else { return nil }
+        #elseif canImport(AppKit)
+        guard let c = NSColor(self).usingColorSpace(.sRGB) else { return nil }
+        let r = c.redComponent, g = c.greenComponent, b = c.blueComponent
+        #endif
+        return String(format: "#%02X%02X%02X",
+                      Int((r * 255).rounded()), Int((g * 255).rounded()), Int((b * 255).rounded()))
     }
 }
 
