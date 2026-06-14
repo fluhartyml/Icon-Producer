@@ -22,6 +22,8 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
+import ImageIO
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -35,6 +37,9 @@ struct ContentView: View {
     @State private var bottomPanel: BottomPanel = .layers
     /// Paint Bucket's current colour (roadmap 2.1) — the user's own light/dark choice.
     @State private var fillColor: Color = .white
+    /// Export (roadmap 2.3): the rendered PNG folder + the exporter sheet flag.
+    @State private var exportBundle: IconExportBundle?
+    @State private var showExporter = false
 
     var body: some View {
         GeometryReader { geo in
@@ -75,6 +80,48 @@ struct ContentView: View {
                 }
             }
         }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { prepareExport() } label: {
+                    Label("Export", systemImage: "square.and.arrow.up.on.square")
+                }
+                .help("Export the icon as a folder of PNG sizes")
+            }
+        }
+        .fileExporter(isPresented: $showExporter,
+                      document: exportBundle,
+                      contentType: .folder,
+                      defaultFilename: exportFilename) { _ in }
+    }
+
+    private var exportFilename: String {
+        let base = document.name.trimmingCharacters(in: .whitespaces)
+        return (base.isEmpty ? "Untitled Icon" : base) + " AppIcon"
+    }
+
+    /// Render every required size to PNG and present the folder exporter (roadmap 2.3).
+    private func prepareExport() {
+        var files: [String: Data] = [:]
+        for px in Self.exportPixelSizes {
+            if let data = ContentView.renderIconPNG(document: document, px: px) {
+                files["icon_\(px).png"] = data
+            }
+        }
+        exportBundle = IconExportBundle(files: files)
+        showExporter = true
+    }
+
+    /// iOS + macOS app-icon pixel sizes, unioned + de-duplicated (roadmap 2.3.2).
+    /// No Contents.json (2.3.1): the user drags the size Xcode asks for into its well.
+    static let exportPixelSizes: [Int] =
+        [16, 20, 29, 32, 40, 58, 60, 64, 76, 80, 87, 120, 128, 152, 167, 180, 256, 512, 1024]
+
+    /// Flatten the visible layers to a px×px PNG (1024 master; PNG per 2.5.1).
+    @MainActor static func renderIconPNG(document: IconDocument, px: Int) -> Data? {
+        let renderer = ImageRenderer(content: IconCompositeView(document: document, side: CGFloat(px)))
+        renderer.scale = 1
+        guard let cg = renderer.cgImage else { return nil }
+        return pngData(from: cg)
     }
 
     private var canvasArea: some View {
@@ -891,6 +938,86 @@ extension Color {
         #endif
         return String(format: "#%02X%02X%02X",
                       Int((r * 255).rounded()), Int((g * 255).rounded()), Int((b * 255).rounded()))
+    }
+}
+
+// MARK: - Flattened render + export (roadmap 2.3)
+
+/// The visible layers composited with NO editor chrome (no checkerboard / box) —
+/// what Export and Share rasterize. Transparent where no opaque background shows.
+struct IconCompositeView: View {
+    let document: IconDocument
+    let side: CGFloat
+
+    var body: some View {
+        ZStack {
+            ForEach(document.layers) { layer in
+                if layer.isVisible { composited(layer) }
+            }
+        }
+        .frame(width: side, height: side)
+    }
+
+    @ViewBuilder
+    private func composited(_ layer: IconLayer) -> some View {
+        switch layer.role {
+        case .background(_, let fillHex):
+            if let hex = fillHex, let color = Color(hex: hex) { color }
+        case .content:
+            ForEach(layer.elements) { element in
+                elementView(element, transform: layer.transform)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func elementView(_ element: LayerElement, transform t: LayerTransform) -> some View {
+        switch element.content {
+        case .symbol(let symbol):
+            Image(systemName: symbol.systemName)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(Color(hex: symbol.tintHex) ?? .primary)
+                .frame(width: side * t.scale, height: side * t.scale)
+                .rotationEffect(.degrees(t.rotationDegrees))
+                .position(x: t.center.x * side, y: t.center.y * side)
+        default:
+            EmptyView() // pixels / image / text render once their tools exist
+        }
+    }
+}
+
+/// CGImage -> PNG bytes, cross-platform via ImageIO (no UIKit/AppKit needed).
+func pngData(from cgImage: CGImage) -> Data? {
+    let data = NSMutableData()
+    guard let dest = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else {
+        return nil
+    }
+    CGImageDestinationAddImage(dest, cgImage, nil)
+    guard CGImageDestinationFinalize(dest) else { return nil }
+    return data as Data
+}
+
+/// Export deliverable (roadmap 2.3): a FOLDER of named PNG sizes, no Contents.json.
+/// Write-only; the user drags the PNGs into Xcode's AppIcon wells themselves.
+struct IconExportBundle: FileDocument {
+    static var readableContentTypes: [UTType] { [.folder] }
+    static var writableContentTypes: [UTType] { [.folder] }
+
+    var files: [String: Data]
+
+    init(files: [String: Data]) { self.files = files }
+
+    init(configuration: ReadConfiguration) throws { files = [:] } // export-only
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        var wrappers: [String: FileWrapper] = [:]
+        for (name, data) in files {
+            let wrapper = FileWrapper(regularFileWithContents: data)
+            wrapper.preferredFilename = name
+            wrappers[name] = wrapper
+        }
+        return FileWrapper(directoryWithFileWrappers: wrappers)
     }
 }
 
