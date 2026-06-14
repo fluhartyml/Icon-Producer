@@ -27,7 +27,7 @@ import UIKit
 #endif
 
 struct ContentView: View {
-    @State private var document = IconDocument.newDefault()
+    @ObservedObject var document: IconDocument
     @State private var activeTool: Tool = .move
     @State private var activeLayerID: IconLayer.ID?
     @State private var bottomPanel: BottomPanel = .layers
@@ -174,7 +174,7 @@ struct ToolRail: View {
 /// The active tool's inspector — Move's controls, or a placeholder for tools not
 /// built yet. Reused by BOTH the portrait swipe panel and the landscape column.
 struct ToolInspector: View {
-    let document: IconDocument
+    @ObservedObject var document: IconDocument
     let activeTool: Tool
     let activeLayerID: IconLayer.ID?
 
@@ -233,8 +233,9 @@ enum BottomPanel: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     struct PanelView: View {
-        let document: IconDocument
+        @ObservedObject var document: IconDocument
         let activeTool: Tool
+        // (PanelView is the bottom swipe panel; it observes the document too.)
         @Binding var activeLayerID: IconLayer.ID?
         @Binding var selection: BottomPanel
 
@@ -329,7 +330,7 @@ struct PanelPlaceholder: View {
 /// Tool #1's inspector: scale / rotation / center / reset on the ACTIVE layer's
 /// transform. (Drag-to-move lives on the canvas box; handles + flip are later.)
 struct MoveTransformInspector: View {
-    let document: IconDocument
+    @ObservedObject var document: IconDocument
     let activeLayerID: IconLayer.ID?
 
     private var index: Int? {
@@ -386,7 +387,7 @@ struct MoveTransformInspector: View {
 /// transparency checkerboard. (Blank layers render nothing -> checkerboard shows.)
 /// When Move is active and a layer is selected, draws a draggable transform box.
 struct CanvasView: View {
-    let document: IconDocument
+    @ObservedObject var document: IconDocument
     var activeLayerID: IconLayer.ID? = nil
     var showTransformBox: Bool = false
 
@@ -459,7 +460,7 @@ struct CanvasView: View {
 /// to the start, so a tap doesn't jump the layer — only a real drag moves it
 /// (Michael 2026-06-11: "it moves when touched").
 struct TransformBox: View {
-    let document: IconDocument
+    @ObservedObject var document: IconDocument
     let index: Int
     let side: CGFloat
     @State private var startCenter: CGPoint?
@@ -517,7 +518,7 @@ struct Checkerboard: View {
 /// rename is via the row's context menu. `showsHeader` is false inside the
 /// portrait swipe panel (the segmented control already labels it "Layers").
 struct LayerPanel: View {
-    let document: IconDocument
+    @ObservedObject var document: IconDocument
     var showsHeader: Bool = true
     @Binding var activeLayerID: IconLayer.ID?
     @State private var renamingID: IconLayer.ID?
@@ -711,5 +712,5 @@ extension Color {
 }
 
 #Preview {
-    ContentView()
+    ContentView(document: .newDefault())
 }

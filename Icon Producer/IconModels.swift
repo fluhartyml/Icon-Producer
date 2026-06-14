@@ -21,6 +21,8 @@
 //
 
 import SwiftUI
+import Combine
+import UniformTypeIdentifiers
 
 // MARK: - Document
 
@@ -28,13 +30,15 @@ import SwiftUI
 /// nondestructive stack of layers. Index 0 = bottom (drawn first), last = top.
 /// Reordering a layer = reindexing this array; layers are never flattened until
 /// export.
-@Observable
-final class IconDocument {
-    var name: String
+///
+/// Reference type + `ObservableObject` because it is the app's `ReferenceFileDocument`
+/// (see the conformance below) — DocumentGroup owns it and saves it as a package.
+final class IconDocument: ObservableObject {
+    @Published var name: String
     /// Square master resolution. 1024 = the design's "draw small, render master big".
     let canvasSize: Int
     /// Bottom-to-top draw order.
-    var layers: [IconLayer]
+    @Published var layers: [IconLayer]
 
     init(name: String = "Untitled Icon", canvasSize: Int = 1024, layers: [IconLayer] = []) {
         self.name = name
@@ -172,4 +176,49 @@ struct TextContent: Codable {
 struct SymbolContent: Codable {
     var systemName = "star.fill"
     var tintHex = "#000000"
+}
+
+// MARK: - Saved package format (roadmap 2.4)
+
+extension UTType {
+    /// Icon Producer's editable project package — a file wrapper (directory) the
+    /// user saves to iCloud Drive / Files. Holds a `manifest.json` (layers +, later,
+    /// edit history) alongside binary assets. Declared in Info.plist to match.
+    static let iconProject = UTType(exportedAs: "com.nightgard.Icon-Producer.project")
+}
+
+/// The serializable shape written into a saved package's `manifest.json`.
+/// Binary assets (pixel/image PNGs) become sibling files in the wrapper when those
+/// tools land — kept out of JSON to avoid base64 bloat.
+struct IconProjectManifest: Codable {
+    var name: String
+    var canvasSize: Int
+    var layers: [IconLayer]
+}
+
+extension IconDocument: ReferenceFileDocument {
+    static var readableContentTypes: [UTType] { [.iconProject] }
+
+    /// Open a saved package: pull `manifest.json` out of the directory wrapper.
+    convenience init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.fileWrappers?["manifest.json"]?.regularFileContents else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        let manifest = try JSONDecoder().decode(IconProjectManifest.self, from: data)
+        self.init(name: manifest.name, canvasSize: manifest.canvasSize, layers: manifest.layers)
+    }
+
+    /// Capture current state for writing (called off the main actor by SwiftUI).
+    func snapshot(contentType: UTType) throws -> IconProjectManifest {
+        IconProjectManifest(name: name, canvasSize: canvasSize, layers: layers)
+    }
+
+    /// Write the package: a directory wrapper holding `manifest.json`.
+    func fileWrapper(snapshot: IconProjectManifest,
+                     configuration: WriteConfiguration) throws -> FileWrapper {
+        let data = try JSONEncoder().encode(snapshot)
+        let manifest = FileWrapper(regularFileWithContents: data)
+        manifest.preferredFilename = "manifest.json"
+        return FileWrapper(directoryWithFileWrappers: ["manifest.json": manifest])
+    }
 }

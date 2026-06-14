@@ -6,27 +6,14 @@
 //
 
 import SwiftUI
-import SwiftData
 
 @main
 struct Icon_ProducerApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        // Document-based (roadmap 2.4.1): each icon is a saved package the user owns
+        // in iCloud Drive / Files. New documents open with three blank layers.
+        DocumentGroup(newDocument: { IconDocument.newDefault() }) { configuration in
+            ContentView(document: configuration.document)
         }
-        .modelContainer(sharedModelContainer)
     }
 }
