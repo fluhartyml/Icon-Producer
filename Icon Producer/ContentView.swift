@@ -229,6 +229,8 @@ struct ToolInspector: View {
             PaintBucketInspector(document: document,
                                  activeLayerID: activeLayerID,
                                  fillColor: $fillColor)
+        case .symbol:
+            SymbolPickerInspector(document: document, activeLayerID: activeLayerID)
         default:
             ToolInspectorPlaceholder(tool: activeTool)
         }
@@ -283,6 +285,94 @@ struct PaintBucketInspector: View {
     private func fillActiveBackground() {
         guard let i = activeIndex else { return }
         document.layers[i].setBackgroundFill(fillColor.hexString())
+    }
+}
+
+// MARK: - Symbol picker inspector (Tool: Symbol — v1 content path, roadmap 2.2)
+
+/// Pick an SF Symbol and place it on the active CONTENT layer (single-glyph icon is
+/// the primary case). Tint is user-chosen; picking replaces the layer's symbol so
+/// the user can change their mind. Scale/position via the Move tool.
+struct SymbolPickerInspector: View {
+    @ObservedObject var document: IconDocument
+    let activeLayerID: IconLayer.ID?
+    @State private var search = ""
+    @State private var tint: Color = .black
+
+    /// A curated starter set of long-standing SF Symbols (safe across OS versions).
+    static let symbols: [String] = [
+        "star.fill", "heart.fill", "bolt.fill", "flame.fill", "leaf.fill", "drop.fill",
+        "moon.fill", "sun.max.fill", "cloud.fill", "sparkles", "wand.and.stars", "crown.fill",
+        "camera.fill", "photo.fill", "video.fill", "music.note", "mic.fill", "headphones",
+        "paintbrush.fill", "pencil", "hammer.fill", "wrench.and.screwdriver.fill", "lightbulb.fill", "key.fill",
+        "house.fill", "cart.fill", "bag.fill", "gift.fill", "bell.fill", "flag.fill",
+        "tag.fill", "paperplane.fill", "envelope.fill", "phone.fill", "message.fill", "globe",
+        "map.fill", "location.fill", "clock.fill", "calendar", "folder.fill", "doc.fill",
+        "gamecontroller.fill", "gearshape.fill", "lock.fill", "wifi", "airplane", "car.fill",
+        "bicycle", "figure.walk", "pawprint.fill", "fish.fill", "bird.fill", "hand.thumbsup.fill",
+    ]
+
+    private var activeIndex: Int? {
+        guard let id = activeLayerID else { return nil }
+        return document.layers.firstIndex(where: { $0.id == id })
+    }
+
+    private var activeIsContent: Bool {
+        guard let i = activeIndex else { return false }
+        if case .content = document.layers[i].role { return true }
+        return false
+    }
+
+    private var currentSymbol: String? {
+        guard let i = activeIndex else { return nil }
+        return document.layers[i].symbolElementName
+    }
+
+    private var filtered: [String] {
+        let q = search.trimmingCharacters(in: .whitespaces).lowercased()
+        return q.isEmpty ? Self.symbols : Self.symbols.filter { $0.contains(q) }
+    }
+
+    private let columns = [GridItem(.adaptive(minimum: 44), spacing: 8)]
+
+    var body: some View {
+        if activeIsContent {
+            VStack(alignment: .leading, spacing: 12) {
+                ColorPicker("Tint", selection: $tint, supportsOpacity: false)
+                TextField("Search symbols", text: $search)
+                    .textFieldStyle(.roundedBorder)
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: 8) {
+                        ForEach(filtered, id: \.self) { name in
+                            Button { place(name) } label: {
+                                Image(systemName: name)
+                                    .font(.system(size: 20))
+                                    .frame(width: 44, height: 44)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(name == currentSymbol
+                                                  ? Color.accentColor.opacity(0.25) : Color.gray.opacity(0.12))
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(name)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else {
+            PanelPlaceholder(systemImage: "star",
+                             title: "Symbol",
+                             subtitle: "Select the Icon layer (a content layer) to place a symbol")
+        }
+    }
+
+    private func place(_ name: String) {
+        guard let i = activeIndex else { return }
+        document.layers[i].setSymbol(name, tintHex: tint.hexString() ?? "#000000")
     }
 }
 

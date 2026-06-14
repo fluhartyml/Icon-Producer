@@ -110,6 +110,22 @@ struct IconLayer: Identifiable, Codable {
         if case .background(let r, _) = role { role = .background(r, fillHex: hex) }
     }
 
+    /// Symbol tool v1 (roadmap 2.2): set this CONTENT layer to a single SF Symbol
+    /// element (single-glyph-as-icon is the primary case). Replaces existing content.
+    /// No-op on background layers.
+    mutating func setSymbol(_ systemName: String, tintHex: String) {
+        guard case .content = role else { return }
+        elements = [LayerElement(content: .symbol(SymbolContent(systemName: systemName, tintHex: tintHex)))]
+    }
+
+    /// The SF Symbol currently on this layer, if any (for picker highlighting).
+    var symbolElementName: String? {
+        for element in elements {
+            if case .symbol(let symbol) = element.content { return symbol.systemName }
+        }
+        return nil
+    }
+
     /// SF Symbol name used to badge this layer in the layer list.
     var displaySymbolName: String {
         switch role {
