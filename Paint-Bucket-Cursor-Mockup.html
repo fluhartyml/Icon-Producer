@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!-- Icon Producer — Paint Bucket glyph / cursor concept sketches (2026-06-15, rev2).
+     rev2 fix: crosshairs now have a white halo + label so the HOTSPOT shows equally
+     on ALL THREE (rev1 buried A's & B's under the colored pour). CONCEPT MOCKUPS,
+     not actual SF Symbols. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Paint Bucket — glyph & cursor concepts (rev2)</title>
+<style>
+  html, body { background:#0a0a0a; color:#e8e8e8; margin:0;
+    font-family:"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif; }
+  body { max-width: 980px; margin:0 auto; padding: 1.4em 1.6em 3em; }
+  h1 { font-size: 22pt; color:#fff; margin:0 0 .2em; }
+  .sub { color:#9a9a9a; font-size:12.5pt; margin:0 0 1.4em; line-height:1.5; }
+  .grid { display:flex; flex-wrap:wrap; gap:18px; }
+  .cell { background:#161616; border:1px solid #2a2a2a; border-radius:12px;
+    width:300px; padding:16px 16px 14px; }
+  .cell h2 { font-size:13.5pt; color:#fff; margin:.1em 0 .1em; }
+  .cell .desc { color:#9a9a9a; font-size:10.5pt; line-height:1.45; min-height:3.4em; }
+  .stage { background:
+      repeating-conic-gradient(#1c1c1c 0% 25%, #232323 0% 50%) 50% / 22px 22px;
+    border-radius:8px; height:210px; display:flex; align-items:center;
+    justify-content:center; margin:8px 0 10px; }
+  .legend { margin-top:1.6em; color:#9a9a9a; font-size:11pt; line-height:1.6;
+    border-top:1px solid #2a2a2a; padding-top:1em; }
+  .hot { color:#ff5a5a; font-weight:600; }
+  code { background:#202020; color:#ffd080; padding:.05em .4em; border-radius:4px; font-size:10.5pt; }
+</style>
+</head>
+<body>
+
+<h1>Paint Bucket — glyph &amp; cursor concepts <span style="font-size:13pt;color:#888">(rev2)</span></h1>
+<p class="sub">
+  Concept sketches — <strong>not</strong> the real SF Symbol. <strong>Fixed:</strong> the
+  <span class="hot">hotspot crosshair</span> now has a white halo + label so it's equally visible on all three
+  (rev1 hid A's &amp; B's under the colored paint — sorry). The crosshair = the proposed hotspot: the
+  pour-tip, i.e. the exact pixel/region that floods. Pick by <strong>style</strong> now.
+</p>
+
+<div class="grid">
+
+  <!-- A: modern line bucket -->
+  <div class="cell">
+    <h2>A · Modern line bucket</h2>
+    <svg class="stage" viewBox="0 0 300 210" width="300" height="210" preserveAspectRatio="xMidYMid meet">
+      <g transform="translate(150,86) rotate(-28)" fill="none" stroke="#f2f2f2" stroke-width="6"
+         stroke-linejoin="round" stroke-linecap="round">
+        <path d="M -42 -34 L 42 -34 L 30 40 L -30 40 Z"/>
+        <ellipse cx="0" cy="-34" rx="42" ry="12"/>
+        <path d="M -38 -30 Q 0 -78 38 -30"/>
+      </g>
+      <path d="M 128 114 C 120 134, 116 146, 116 160" fill="none" stroke="#3da9ff" stroke-width="7" stroke-linecap="round"/>
+      <!-- hotspot: white halo then red marks then label -->
+      <g transform="translate(116,162)">
+        <line x1="-13" y1="0" x2="13" y2="0" stroke="#fff" stroke-width="5"/>
+        <line x1="0" y1="-13" x2="0" y2="13" stroke="#fff" stroke-width="5"/>
+        <circle r="8" fill="none" stroke="#fff" stroke-width="5"/>
+        <line x1="-13" y1="0" x2="13" y2="0" stroke="#ff3b30" stroke-width="2"/>
+        <line x1="0" y1="-13" x2="0" y2="13" stroke="#ff3b30" stroke-width="2"/>
+        <circle r="8" fill="none" stroke="#ff3b30" stroke-width="2"/>
+        <circle r="1.8" fill="#ff3b30"/>
+      </g>
+      <text x="116" y="192" fill="#ff5a5a" font-size="11" text-anchor="middle" font-family="sans-serif">hotspot</text>
+    </svg>
+    <p class="desc">Clean SF-style stroke. Reads "fill," blends with the other line tools. Most modern.</p>
+  </div>
+
+  <!-- B: solid bucket w/ colored pour -->
+  <div class="cell">
+    <h2>B · Solid bucket, colored pour</h2>
+    <svg class="stage" viewBox="0 0 300 210" width="300" height="210" preserveAspectRatio="xMidYMid meet">
+      <g transform="translate(150,84) rotate(-30)">
+        <path d="M -40 -30 L 40 -30 L 28 42 L -28 42 Z" fill="#d9d9d9" stroke="#888" stroke-width="3"/>
+        <ellipse cx="0" cy="-30" rx="40" ry="11" fill="#bdbdbd" stroke="#888" stroke-width="3"/>
+        <path d="M -36 -27 Q 0 -72 36 -27" fill="none" stroke="#888" stroke-width="5" stroke-linecap="round"/>
+      </g>
+      <path d="M 126 110 C 116 132, 112 144, 112 158" fill="none" stroke="#ffb000" stroke-width="11" stroke-linecap="round"/>
+      <ellipse cx="112" cy="164" rx="16" ry="5" fill="#ffb000" opacity="0.85"/>
+      <g transform="translate(112,162)">
+        <line x1="-13" y1="0" x2="13" y2="0" stroke="#fff" stroke-width="5"/>
+        <line x1="0" y1="-13" x2="0" y2="13" stroke="#fff" stroke-width="5"/>
+        <circle r="8" fill="none" stroke="#fff" stroke-width="5"/>
+        <line x1="-13" y1="0" x2="13" y2="0" stroke="#ff3b30" stroke-width="2"/>
+        <line x1="0" y1="-13" x2="0" y2="13" stroke="#ff3b30" stroke-width="2"/>
+        <circle r="8" fill="none" stroke="#ff3b30" stroke-width="2"/>
+        <circle r="1.8" fill="#ff3b30"/>
+      </g>
+      <text x="112" y="192" fill="#ff5a5a" font-size="11" text-anchor="middle" font-family="sans-serif">hotspot</text>
+    </svg>
+    <p class="desc">Skeuomorphic; the paint color = the fill color you picked. Most literal "pours color here."</p>
+  </div>
+
+  <!-- C: classic MacPaint-style chunky bucket -->
+  <div class="cell">
+    <h2>C · Classic (MacPaint-style)</h2>
+    <svg class="stage" viewBox="0 0 300 210" width="300" height="210" preserveAspectRatio="xMidYMid meet">
+      <g transform="translate(150,84) rotate(-32)">
+        <path d="M -38 -28 L 38 -28 L 26 40 L -26 40 Z" fill="#000" stroke="#fff" stroke-width="3"/>
+        <rect x="-42" y="-40" width="84" height="12" fill="#000" stroke="#fff" stroke-width="3"/>
+        <path d="M -34 -28 Q 0 -68 34 -28" fill="none" stroke="#fff" stroke-width="5"/>
+      </g>
+      <path d="M 124 108 l 8 6 l -6 10 l 8 8 l -8 10 l 6 10" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="miter"/>
+      <g transform="translate(130,160)">
+        <line x1="-13" y1="0" x2="13" y2="0" stroke="#fff" stroke-width="5"/>
+        <line x1="0" y1="-13" x2="0" y2="13" stroke="#fff" stroke-width="5"/>
+        <circle r="8" fill="none" stroke="#fff" stroke-width="5"/>
+        <line x1="-13" y1="0" x2="13" y2="0" stroke="#ff3b30" stroke-width="2"/>
+        <line x1="0" y1="-13" x2="0" y2="13" stroke="#ff3b30" stroke-width="2"/>
+        <circle r="8" fill="none" stroke="#ff3b30" stroke-width="2"/>
+        <circle r="1.8" fill="#ff3b30"/>
+      </g>
+      <text x="130" y="192" fill="#ff5a5a" font-size="11" text-anchor="middle" font-family="sans-serif">hotspot</text>
+    </svg>
+    <p class="desc">1-bit, chunky — the Macintosh SE / System 6 heritage read. Retro charm; least modern, stands out from the SF strip.</p>
+  </div>
+
+</div>
+
+<div class="legend">
+  All three now show the hotspot identically — so this is purely a <strong>style</strong> call: A modern · B literal/colored · C retro.<br>
+  <strong>Toolbar glyph</strong> → SF Symbol if A-ish (verify it exists); custom art if B/C.
+  <strong>Cursor</strong> → custom image either way, with the <span class="hot">hotspot at the pour-tip</span> (your insight).<br>
+  Tell me the style and I'll refine + build.
+</div>
+
+</body>
+</html>

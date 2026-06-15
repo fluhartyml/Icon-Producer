@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <!--
-  Icon Producer — Ship Roadmap (amber proof doc; outline-numbered, status-badged).
+  Icon Producer — Build & Shakedown Roadmap (amber proof doc; outline-numbered, status-badged).
   Companion to Icon-Producer-Ship-Checklist.html (the printer-friendly one).
   Convention: apartment Workshop/AMBER-HTML-TEMPLATE.html + feedback_amber_html_auto_refresh.md
-  React by outline number in chat; I flip badges Q -> REC -> LOCKED -> COMPLETE as we go.
+  Sorted 2026-06-15 by STATUS: DONE first, LOCKED middle, all else (NOW/Q/REC/STOP) after.
 -->
 <html lang="en">
 <head>
@@ -69,6 +69,7 @@
   .recommend{ background: #003322; color: #66ffcc; border-color: #006644; }   /* REC */
   .locked   { background: #002233; color: #66ccff; border-color: #004466; }   /* LOCKED IN */
   .complete { background: #0a3d1a; color: #8cff9e; border-color: #1a7f37; }   /* COMPLETE */
+  .now      { background: #3d2a0a; color: #ffcc66; border-color: #7f5a1a; }   /* CURRENT focus */
   .hardstop { background: #330000; color: #ff6666; border-color: #663333; }   /* STOP */
   .blank { height: 0.5em; }
   .decide { color: #ffd080; }
@@ -78,75 +79,76 @@
 </head>
 <body>
 
-<div class="filename">Icon-Producer-Roadmap-DRAFT-2026-06-14.html</div>
+<div class="filename">Icon-Producer-Roadmap-DRAFT-2026-06-14.html &nbsp;·&nbsp; sorted 2026-06-15 by status: DONE → LOCKED → all else</div>
 
-<h1>Icon Producer — Ship Roadmap</h1>
+<h1>Icon Producer — Build &amp; Shakedown Roadmap</h1>
 
 <div class="legend">
 <strong>Status workflow (I flip these as we decide):</strong><br>
-<span class="status question">Q</span> QUESTION — need your answer before this can move<br>
-<span class="status recommend">REC</span> RECOMMENDED — my proposed call, awaiting your lock-in<br>
-<span class="status locked">LOCKED</span> LOCKED IN — you've decided / it's a standing rule; proceeding<br>
-<span class="status complete">DONE</span> COMPLETE — finished &amp; verified<br>
-<span class="status hardstop">STOP</span> HARD CONSTRAINT — a fact we route around, not negotiate<br>
+<span class="status complete">DONE</span> COMPLETE — finished &amp; verified <span class="note">(front of doc)</span><br>
+<span class="status locked">LOCKED</span> LOCKED IN — decided / standing rule <span class="note">(middle)</span><br>
+<span class="status now">NOW</span> CURRENT focus · <span class="status question">Q</span> QUESTION · <span class="status recommend">REC</span> RECOMMENDED · <span class="status hardstop">STOP</span> HARD CONSTRAINT <span class="note">(all else — after)</span><br>
 <br>
-Auto-refreshes every 60s, keeps your scroll spot. React by <strong>outline number</strong> (e.g. "lock 1.2", "1 is B"); refresh any time to pull my latest.
+React by outline number in chat (e.g. "lock A3", "done E1"). Refresh any time to pull my latest.
 </div>
 
-<h2>0 — Context (two hard realities)</h2>
-<span class="L"><span class="num">0.1</span> <span class="status complete">DONE</span> Outputs BUILT — Export (PNG folder), Save (package), Share (flat PNG). <span class="note">Export + save verified by headless tests; the app now makes &amp; saves an icon.</span></span>
-<span class="L"><span class="num">0.2</span> <span class="status locked">LOCKED</span> Build/test here; <strong>archive + submit on the Mac mini</strong> (released Xcode 26 / macOS 26 — beta can't upload). See 7.</span>
-<span class="L"><span class="num">0.3</span> <span class="status locked">LOCKED</span> <strong>Icon Producer is a TOOL only</strong> — the user creates the icon; the app never autonomously generates one (AI is user-invoked &amp; assistive, not automatic).</span>
-<span class="L"><span class="num">0.4</span> <span class="status complete">DONE</span> <strong>New document = three BLANK layers</strong> (Light bg, Dark bg, content). No example icon, no test star. <span class="note">Built + pushed (e0ea6a4).</span></span>
+<h2>✅ DONE — built &amp; verified</h2>
+<span class="L"><span class="num">D1</span> <span class="status complete">DONE</span> <strong>Move / Transform</strong> (Tool #1) — select a layer, drag on canvas; scale / rotation / center / reset.</span>
+<span class="L"><span class="num">D2</span> <span class="status complete">DONE</span> <strong>Paint Bucket / Fill</strong> (Tool #2) — fills the active background layer with the user's OWN chosen colour (Fill button or canvas tap). <span class="note">732e137. Shakedown in progress — see N1.</span></span>
+<span class="L"><span class="num">D3</span> <span class="status complete">DONE</span> <strong>SF</strong> — SF Symbols (Tool #10), Apple's symbol system (NOT a font); places one on a layer. <span class="note">48766fc. The v1 content path.</span></span>
+<span class="L"><span class="num">D4</span> <span class="status complete">DONE</span> <strong>Export</strong> — flatten to a FOLDER of 19 PNG sizes (iOS + macOS), drag into Xcode wells. <span class="note">434e805; every size renders at exact px (headless-tested).</span></span>
+<span class="L"><span class="num">D5</span> <span class="status complete">DONE</span> <strong>Save / Save As</strong> — editable <strong>package</strong> (manifest.json of layers), <strong>document-based, saves to iCloud Drive</strong>/Files; SwiftData dropped. <span class="note">d0ef4d4.</span></span>
+<span class="L"><span class="num">D6</span> <span class="status complete">DONE</span> <strong>Share sheet</strong> — flat 1024 PNG of the VISIBLE layers, snapshot at tap. <span class="note">da9908c.</span></span>
+<span class="L"><span class="num">D7</span> <span class="status complete">DONE</span> <strong>Icon Producer is a TOOL only</strong> — the user creates the icon; the app never autonomously generates one.</span>
+<span class="L"><span class="num">D8</span> <span class="status complete">DONE</span> New document = <strong>three BLANK layers</strong> (Light bg, Dark bg, content). No example icon, no test star.</span>
+<span class="L"><span class="num">D9</span> <span class="status complete">DONE</span> Bundle ID <code>com.nightgard.Icon-Producer</code> · Team <code>3X3F6UJ44H</code> · automatic signing.</span>
+<span class="L"><span class="num">D10</span> <span class="status complete">DONE</span> <strong>Verified on device 2026-06-15</strong> — launches to the document browser (iPad Pro M4) · Save + iCloud sync round-trips · macOS build green (guarded iOS-only <code>editMode</code> with <code>#if os(iOS)</code>, 70bbd11) → universal iOS + macOS compiles.</span>
 
-<h2>1 — v1 scope <span class="note">(LOCKED — this is the path we've been on)</span></h2>
-<span class="L"><span class="num">1</span> <span class="status locked">LOCKED</span> <strong>v1 = manual editor first</strong> — Backgrounds + Symbol/Text/Image + export. AI stays in the plan as the v1.1 marquee, sequenced after (not cut).</span>
-<span class="L sub"><span class="num">1.1</span> AI (v1.1) — <span class="note">Image Playground as a TOOL + inspector: (a) filter an existing layer, (b) generate a new layer. Hardware-gated; non-AI fallback when it lands.</span></span>
-<span class="L blank"></span>
-<span class="L"><span class="num">1.2</span> <span class="decide">Locked 2026-06-14. Remaining content question moves to 2.2 — which manual tool(s) beyond backgrounds in v1.</span></span>
+<h2>🔒 LOCKED — decided, standing</h2>
+<span class="L"><span class="num">L1</span> <span class="status complete">DONE</span> <span class="status locked">LOCKED</span> <strong>v1 = manual editor first</strong> — backgrounds + content tools (<strong>SF + F</strong>, both in the shakedown version) + export. AI is the v1.1 marquee (not cut). <span class="note">SF built; F still to build. Text / Image are fast-follows.</span></span>
+<span class="L"><span class="num">L2</span> <span class="status complete">DONE</span> <span class="status locked">LOCKED</span> <strong>Paint Bucket behaviour:</strong> you fill the <em>active</em> layer but see the <em>top visible</em> layer. Backgrounds are opaque and <strong>Dark draws on top of Light</strong>, so to view a Light fill you <strong>hide Dark</strong> (the eyeball is the light/dark preview). Not a bug. <span class="note">Confirmed working as wanted on device 2026-06-15.</span></span>
+<span class="L"><span class="num">L3</span> <span class="status locked">LOCKED</span> <strong>Layer panel — Add:</strong> a <strong>+</strong> at the top-right.</span>
+<span class="L"><span class="num">L4</span> <span class="status locked">LOCKED</span> <strong>Layer panel — Long-press → context menu:</strong> Rename · Duplicate · Delete.</span>
+<span class="L sub"><span class="num">L4.1</span> <span class="status locked">LOCKED</span> <strong>Duplicate</strong> — exact copy (fill/elements, transform, opacity, visibility), named "&lt;name&gt; copy," inserted above the original, selected; new UUID.</span>
+<span class="L"><span class="num">L5</span> <span class="status locked">LOCKED</span> <strong>Layer panel — Swipe-to-delete</strong> on a row (delete also in the long-press menu).</span>
+<span class="L"><span class="num">L6</span> <span class="status locked">LOCKED</span> <strong>Export:</strong> NO tool-written <code>Contents.json</code> (PNGs only; Xcode authors its own). Keep Icon Composer <strong><code>.icon</code></strong> companion; single-1024 dropped (Share covers it).</span>
+<span class="L"><span class="num">L7</span> <span class="status locked">LOCKED</span> <strong>Export + Share format</strong> = PNG (lossless + alpha); resolution = <strong>1024</strong> (edit at 1024, save at 1024).</span>
+<span class="L"><span class="num">L8</span> <span class="status locked">LOCKED</span> No-AI fallback = simply <strong>don't show the AI tool</strong> on non-capable devices (v1.1 concern).</span>
+<span class="L"><span class="num">L9</span> <span class="status locked">LOCKED</span> <strong>Platforms = iOS + macOS</strong>, simultaneously. visionOS stays template-default — untested, unclaimed.</span>
+<span class="L"><span class="num">L10</span> <span class="status locked">LOCKED</span> <strong>App icon</strong> = light + dark only, no tinted. <strong>Dogfood Icon Producer to make its own icon</strong> once tools + export are ready.</span>
+<span class="L"><span class="num">L11</span> <span class="status locked">LOCKED</span> <strong>Listing</strong> — English-only, Americas-only. <span class="note">Name / subtitle / description / keywords / category / support URL still to write.</span></span>
+<span class="L"><span class="num">L12</span> <span class="status locked">LOCKED</span> <strong>Sign in with Apple</strong> — staged LOCAL first; gates <em>our</em> premium value only, NEVER iCloud sync. In v1.</span>
+<span class="L"><span class="num">L13</span> <span class="status locked">LOCKED</span> <strong>Submit</strong> on a Mac mini (Xcode 26 / macOS 26): archive → upload → submit. TestFlight not used → direct submit.</span>
 
-<h2>2 — Build the v1 feature core <span class="note">(on the Air; test on device; commit+push on green)</span></h2>
-<span class="L"><span class="num">2.1</span> <span class="status complete">DONE</span> <strong>Paint Bucket v1</strong> — fill Light/Dark backgrounds with the user's OWN chosen colour. <span class="note">Built + pushed (732e137); builds green. Fill tap-behaviour pending your on-device test.</span></span>
-<span class="L"><span class="num">2.2</span> <span class="status locked">LOCKED</span> <strong>Content path for v1 = Symbol</strong> (SF Symbols). Text + Image follow. AI is v1.1.</span>
-<span class="L"><span class="num">2.3</span> <span class="status complete">DONE</span> <strong>EXPORT</strong> — flatten to a <strong>FOLDER of 19 PNG sizes</strong> (iOS+macOS), drag into Xcode wells. <span class="note">Built + tested (434e805): every size renders at exact px.</span></span>
-<span class="L sub"><span class="num">2.3.1</span> <span class="status locked">LOCKED</span> <strong>No tool-written <code>Contents.json</code></strong> (your call — you don't trust it). Icon Producer emits PNGs only; Xcode authors its own JSON.</span>
-<span class="L sub"><span class="num">2.3.2</span> <span class="status locked">LOCKED</span> Both <strong>iOS + macOS</strong> size sets (Mac is a target — always has been). Exact sizes verified vs the Xcode 27 template at build time.</span>
-<span class="L sub"><span class="num">2.3.3</span> <span class="status locked">LOCKED</span> Drop single-1024 (Share already gives a flat 1024 PNG). Keep Icon Composer <strong><code>.icon</code></strong> companion — the layered format, not covered by Share.</span>
-<span class="L"><span class="num">2.4</span> <span class="status complete">DONE</span> <strong>SAVE / SAVE AS</strong> — editable <strong>package</strong> (file wrapper) with manifest.json (layers). <span class="note">Built (d0ef4d4); history bytes + binary assets fold in as those tools land.</span></span>
-<span class="L sub"><span class="num">2.4.1</span> <span class="status complete">DONE</span> <strong>Document-based</strong>, saves to <strong>iCloud Drive</strong>/Files. SwiftData dropped. <span class="note">Verified in sim — launches to document browser.</span></span>
-<span class="L sub"><span class="num">2.4.2</span> <span class="status complete">DONE</span> Save is <strong>v1</strong> — foundation of the document-based app.</span>
-<span class="L"><span class="num">2.5</span> <span class="status complete">DONE</span> <strong>SHARE SHEET</strong> — flat 1024 PNG of the VISIBLE layers, snapshot at tap, via the system share sheet. <span class="note">Built + pushed (da9908c).</span></span>
-<span class="L sub"><span class="num">2.5.1</span> <span class="status locked">LOCKED</span> Format = <strong>PNG</strong> (lossless + alpha; JPEG can't do transparency &amp; mushes sharp edges). Applies to Export too.</span>
-<span class="L sub"><span class="num">2.5.2</span> <span class="status locked">LOCKED</span> Resolution = <strong>1024</strong> — you edit at 1024, it saves at 1024.</span>
-<span class="L"><span class="num">2.6</span> <span class="status locked">LOCKED</span> No-AI fallback = simply <strong>don't show the AI tool</strong> on non-capable devices. (v1.1 concern — AI isn't in v1.)</span>
-<span class="L"><span class="num">2.7</span> <span class="status locked">LOCKED</span> Real-device test pass — iPhone + iPad + Mac ("don't ship untested"). <span class="note">(Test-star removal is covered by 0.4 — three blank layers.)</span></span>
+<h2>▶️ ALL ELSE — current, open, recommended, constraints</h2>
 
-<h2>3 — Platforms</h2>
-<span class="L"><span class="num">3</span> <span class="status locked">LOCKED</span> <strong>iOS + macOS, simultaneously</strong> (the path we've been on). visionOS stays template-default — untested, unclaimed.</span>
+<span class="L"><span class="num">N1</span> <span class="status now">NOW</span> <strong>Shake down the Paint Bucket</strong> — cases left to run: re-pour a different colour over an existing fill · tap-canvas vs. the Fill button · fill with a CONTENT layer selected (should refuse) · toggle which background is visible to confirm each fill landed.</span>
 
-<h2>4 — Icon Producer's own app icon</h2>
-<span class="L"><span class="num">4</span> <span class="status locked">LOCKED</span> Light + dark only, <strong>no tinted</strong> (your rule). <span class="note">Dogfood Icon Producer to make it, once content + export work.</span></span>
+<span class="L"><span class="num">Q1</span> <span class="status question">Q</span> <strong>Colour picker needs attention</strong> — the stock iOS picker's popover collides with / gets clipped by the Layers panel on iPad. Reposition-resize, custom inline picker, or recent-colours memory?</span>
+<span class="L"><span class="num">Q2</span> <span class="status question">Q</span> Are the three starting layers (Light / Dark / Icon) deletable or protected? <span class="note">(Decide when we build the panel.)</span></span>
+<span class="L"><span class="num">Q3</span> <span class="status complete">DONE</span> <span class="status locked">LOCKED</span> <strong>True flood / region fill — in v1 (shakedown).</strong> Beyond today's solid background fill: flood enclosed regions / transparent holes on a content layer. <span class="note">Build pending — needs the flood-fill algorithm; fillable boundaries come from the SF/F glyphs (or Image) already in v1, so it composes with the v1 content tools.</span></span>
 
-<h2>5 — App Store Connect mechanics <span class="note">(runs in parallel with 2 — independent of code)</span></h2>
-<span class="L"><span class="num">5.1</span> <span class="status complete">DONE</span> Bundle ID <code>com.nightgard.Icon-Producer</code> · Team <code>3X3F6UJ44H</code> · automatic signing.</span>
-<span class="L"><span class="num">5.2</span> <span class="status recommend">REC</span> Register the App ID + <strong>create the ASC app record</strong>.</span>
-<span class="L"><span class="num">5.3</span> <span class="status recommend">REC</span> Screenshots — 1242×2688 (or 1284×2778); add iPad sizes if iPad ships (see 3).</span>
-<span class="L"><span class="num">5.4</span> <span class="status recommend">REC</span> Privacy nutrition labels + privacy URL <span class="note">(blanket <code>privacy.html</code> covers it)</span>.</span>
-<span class="L"><span class="num">5.5</span> <span class="status locked">LOCKED</span> Listing — English-only, Americas-only. <span class="note">Name / subtitle / description / keywords / category / support URL still to write.</span></span>
-<span class="L"><span class="num">5.6</span> <span class="status recommend">REC</span> Monetization — paid/subscription premium model: StoreKit products + ASC products + agreements / banking / tax.</span>
+<span class="L"><span class="num">R1</span> <span class="status recommend">REC</span> <strong>Pen</strong> (Tool #3) — pixel painter. <span class="note">Placeholder; not built.</span></span>
+<span class="L"><span class="num">R2</span> <span class="status recommend">REC</span> <strong>Eraser</strong> (Tool #4). <span class="note">Not built.</span></span>
+<span class="L"><span class="num">R3</span> <span class="status recommend">REC</span> <strong>Eyedropper</strong> (Tool #5). <span class="note">Not built.</span></span>
+<span class="L"><span class="num">R4</span> <span class="status recommend">REC</span> <strong>Shape</strong> (Tool #6) — line / rect / oval / polygon. <span class="note">Not built.</span></span>
+<span class="L"><span class="num">R5</span> <span class="status recommend">REC</span> <strong>Path</strong> (Tool #7) — vector Bezier. <span class="note">Not built.</span></span>
+<span class="L"><span class="num">R6</span> <span class="status recommend">REC</span> <strong>Text</strong> (Tool #8) — type a string in a font (distinct from F's browse-and-pick). <span class="note">Placeholder; fast-follow after v1 SF.</span></span>
+<span class="L"><span class="num">R7</span> <span class="status recommend">REC</span> <strong>F</strong> — Font (Tool #9): browse any font's full repertoire incl. Wingdings; place a glyph on a layer. <span class="note">In v1 (shakedown) per L1 — not built yet. (Renamed from "Glyph" — SF Symbols are also glyphs; F = font characters only.)</span></span>
+<span class="L"><span class="num">R8</span> <span class="status recommend">REC</span> <strong>Image</strong> (Tool #11) — import File / Photo / paste. <span class="note">Placeholder. The v1.1 AI tool (Image Playground — filter a layer / generate a layer, hardware-gated) lands here.</span></span>
+<span class="L"><span class="num">R9</span> <span class="status recommend">REC</span> <strong>Zoom</strong> (Tool #12). <span class="note">Pinch-zoom parked 2026-06-11; re-wire when the Pen needs it.</span></span>
+<span class="L"><span class="num">R10</span> <span class="status recommend">REC</span> <strong>Lock a layer</strong> — FUTURE (post-v1). Net-new model field; blocks paint/move/transform/delete until unlocked.</span>
+<span class="L"><span class="num">R11</span> <span class="status recommend">REC</span> <strong>Groups + group-lock</strong> — FUTURE (post-v1). Net-new grouping structure.</span>
+<span class="L"><span class="num">R12</span> <span class="status recommend">REC</span> <strong>Branded "Icon Producer" iCloud folder</strong> (app glyph on the folder) — FUTURE. Needs the iCloud ubiquity-container setup (<code>NSUbiquitousContainers</code>) AND the app icon (L10) to exist first.</span>
+<span class="L"><span class="num">R13</span> <span class="status recommend">REC</span> Register the App ID + <strong>create the ASC app record</strong>.</span>
+<span class="L"><span class="num">R14</span> <span class="status recommend">REC</span> Screenshots — 1242×2688 (or 1284×2778); add iPad sizes.</span>
+<span class="L"><span class="num">R15</span> <span class="status recommend">REC</span> Privacy nutrition labels + privacy URL <span class="note">(blanket <code>privacy.html</code> covers it)</span>.</span>
+<span class="L"><span class="num">R16</span> <span class="status recommend">REC</span> Monetization — paid / subscription premium model: StoreKit + ASC products + agreements / banking / tax.</span>
+<span class="L"><span class="num">R17</span> <span class="status recommend">REC</span> <strong>Sign in with Apple — NEXT to wire</strong>, but needs the capability enabled in your developer account first (signing-sensitive). Handoff point.</span>
+<span class="L"><span class="num">R18</span> <span class="status complete">DONE</span> <span class="status locked">LOCKED</span> <strong>Pointer reflects the active tool</strong> — cursor changes to the selected tool's glyph; <strong>paint-bucket pointer when Fill is active</strong>, custom image, <strong>hotspot at the pour-tip</strong>. Mac + iPad pointer. <span class="note">Build pending — style B bucket (R19), hotspot at the pour-tip. <strong>Easter egg:</strong> the pour in the cursor = the user's CURRENT fill colour, live (pick teal → bucket pours teal under the pointer).</span></span>
+<span class="L"><span class="num">R19</span> <span class="status complete">DONE</span> <span class="status locked">LOCKED</span> <strong>Fill tool glyph = paint bucket, style B (solid, colored pour)</strong> — replaces <code>drop.fill</code>. <span class="note">Build pending — CUSTOM art (not an SF Symbol). Toolbar glyph = STATIC paint colour; the live-colour pour lives in the R18 cursor (easter egg). Concept: Paint-Bucket-Cursor-Mockup.html.</span></span>
 
-<h2>6 — Registration gate</h2>
-<span class="L"><span class="num">6.1</span> <span class="status locked">LOCKED</span> Sign in with Apple, <strong>staged LOCAL first</strong>; gates <em>our</em> premium value only — <strong>never</strong> iCloud sync (already paid to Apple).</span>
-<span class="L"><span class="num">6.2</span> <span class="status locked">LOCKED</span> Sign in with Apple <strong>in v1</strong> (local). <span class="note">NEXT, but needs the Sign-in-with-Apple capability enabled in your developer account first (signing-sensitive) — handoff point.</span></span>
-
-<h2>7 — Cut over &amp; submit</h2>
-<span class="L"><span class="num">7</span> <span class="status locked">LOCKED</span> On a Mac mini (Xcode 26 / macOS 26): <strong>archive → upload → submit for review</strong>. TestFlight not in your toolkit → direct submit.</span>
-
-<h2>Open questions blocking progress</h2>
-<span class="L"><span class="num">Q1</span> <span class="status complete">DONE</span> Scope — manual editor first. (item 1)</span>
-<span class="L"><span class="num">Q2</span> <span class="status complete">DONE</span> Content path = Symbol. (item 2.2)</span>
-<span class="L"><span class="num">Q3</span> <span class="status complete">DONE</span> Platforms — iOS + macOS. (item 3)</span>
-<span class="L"><span class="num">Q4</span> <span class="status complete">DONE</span> Sign in with Apple in v1 (local). (item 6.2)</span>
+<span class="L"><span class="num">S1</span> <span class="status hardstop">STOP</span> Xcode 27 / macOS 27 <strong>beta can't upload</strong> to App Store Connect → archive + submit on a Mac mini (released Xcode 26 / macOS 26). See L13.</span>
 
 <div class="filename" style="margin-top: 2em; border-top: 1px solid #5a3a00; border-bottom: none; padding-top: 0.2em;">Icon-Producer-Roadmap-DRAFT-2026-06-14.html</div>
 
