@@ -932,11 +932,14 @@ struct CanvasView: View {
             let side = min(geo.size.width, geo.size.height)
             ZStack {
                 Checkerboard()
-                ForEach(document.layers) { layer in
-                    if layer.isVisible {
-                        layerContent(layer, side: side)
-                    }
-                }
+                // Non-destructive canvas mask: content past the icon square is GHOSTED
+                // (dimmed, unclipped) so you can still see + position it; then drawn CRISP
+                // clipped to the square. What shows inside the square = what exports.
+                layerStack(side: side)
+                    .opacity(0.25)
+                layerStack(side: side)
+                    .frame(width: side, height: side)
+                    .clipped()
                 // Live pen stroke (the active layer's in-progress raster), kept crisp.
                 if activeTool == .pen, let img = pen.image {
                     Image(decorative: img, scale: 1)
@@ -987,6 +990,16 @@ struct CanvasView: View {
     /// a content layer renders its elements at the layer's transform. (Most
     /// element kinds wait for their tools; `symbol` renders now so the TEST-ONLY
     /// shakedown star is visible for the Move/Transform tool.)
+    /// All visible layers composited — used twice (ghosted bleed + clipped crisp icon).
+    @ViewBuilder
+    private func layerStack(side: CGFloat) -> some View {
+        ZStack {
+            ForEach(document.layers) { layer in
+                if layer.isVisible { layerContent(layer, side: side) }
+            }
+        }
+    }
+
     @ViewBuilder
     private func layerContent(_ layer: IconLayer, side: CGFloat) -> some View {
         switch layer.role {
@@ -1467,6 +1480,7 @@ struct IconCompositeView: View {
             }
         }
         .frame(width: side, height: side)
+        .clipped()
     }
 
     @ViewBuilder
