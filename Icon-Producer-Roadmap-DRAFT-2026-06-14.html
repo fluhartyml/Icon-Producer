@@ -94,10 +94,10 @@ Auto-refreshes every 60s, keeps your scroll spot. React by <strong>outline numbe
 </div>
 
 <h2>0 — Context (two hard realities)</h2>
-<span class="L"><span class="num">0.1</span> <span class="status locked">LOCKED</span> Outputs specified — Export (PNG folder), Save (package), Share (flat PNG). <span class="note">Spec locked; not yet coded. Building is the next step.</span></span>
+<span class="L"><span class="num">0.1</span> <span class="status complete">DONE</span> Outputs BUILT — Export (PNG folder), Save (package), Share (flat PNG). <span class="note">Export + save verified by headless tests; the app now makes &amp; saves an icon.</span></span>
 <span class="L"><span class="num">0.2</span> <span class="status locked">LOCKED</span> Build/test here; <strong>archive + submit on the Mac mini</strong> (released Xcode 26 / macOS 26 — beta can't upload). See 7.</span>
 <span class="L"><span class="num">0.3</span> <span class="status locked">LOCKED</span> <strong>Icon Producer is a TOOL only</strong> — the user creates the icon; the app never autonomously generates one (AI is user-invoked &amp; assistive, not automatic).</span>
-<span class="L"><span class="num">0.4</span> <span class="status locked">LOCKED</span> <strong>New document = three BLANK layers</strong> (Light bg, Dark bg, content) — empty. No example icon, no test star. The user fills them.</span>
+<span class="L"><span class="num">0.4</span> <span class="status complete">DONE</span> <strong>New document = three BLANK layers</strong> (Light bg, Dark bg, content). No example icon, no test star. <span class="note">Built + pushed (e0ea6a4).</span></span>
 
 <h2>1 — v1 scope <span class="note">(LOCKED — this is the path we've been on)</span></h2>
 <span class="L"><span class="num">1</span> <span class="status locked">LOCKED</span> <strong>v1 = manual editor first</strong> — Backgrounds + Symbol/Text/Image + export. AI stays in the plan as the v1.1 marquee, sequenced after (not cut).</span>
@@ -106,16 +106,16 @@ Auto-refreshes every 60s, keeps your scroll spot. React by <strong>outline numbe
 <span class="L"><span class="num">1.2</span> <span class="decide">Locked 2026-06-14. Remaining content question moves to 2.2 — which manual tool(s) beyond backgrounds in v1.</span></span>
 
 <h2>2 — Build the v1 feature core <span class="note">(on the Air; test on device; commit+push on green)</span></h2>
-<span class="L"><span class="num">2.1</span> <span class="status locked">LOCKED</span> <strong>Paint Bucket v1</strong> — user fills the Light and Dark background layers with their OWN chosen color (not preset white/black). Tool #2, where you're parked.</span>
+<span class="L"><span class="num">2.1</span> <span class="status complete">DONE</span> <strong>Paint Bucket v1</strong> — fill Light/Dark backgrounds with the user's OWN chosen colour. <span class="note">Built + pushed (732e137); builds green. Fill tap-behaviour pending your on-device test.</span></span>
 <span class="L"><span class="num">2.2</span> <span class="status locked">LOCKED</span> <strong>Content path for v1 = Symbol</strong> (SF Symbols). Text + Image follow. AI is v1.1.</span>
-<span class="L"><span class="num">2.3</span> <span class="status locked">LOCKED</span> <strong>EXPORT</strong> — flatten to shipping icons. Deliverable: a <strong>FOLDER of every required PNG size, clearly named</strong>. Drag the PNGs into the AppIcon wells in Xcode yourself. Non-negotiable for v1.</span>
+<span class="L"><span class="num">2.3</span> <span class="status complete">DONE</span> <strong>EXPORT</strong> — flatten to a <strong>FOLDER of 19 PNG sizes</strong> (iOS+macOS), drag into Xcode wells. <span class="note">Built + tested (434e805): every size renders at exact px.</span></span>
 <span class="L sub"><span class="num">2.3.1</span> <span class="status locked">LOCKED</span> <strong>No tool-written <code>Contents.json</code></strong> (your call — you don't trust it). Icon Producer emits PNGs only; Xcode authors its own JSON.</span>
 <span class="L sub"><span class="num">2.3.2</span> <span class="status locked">LOCKED</span> Both <strong>iOS + macOS</strong> size sets (Mac is a target — always has been). Exact sizes verified vs the Xcode 27 template at build time.</span>
 <span class="L sub"><span class="num">2.3.3</span> <span class="status locked">LOCKED</span> Drop single-1024 (Share already gives a flat 1024 PNG). Keep Icon Composer <strong><code>.icon</code></strong> companion — the layered format, not covered by Share.</span>
-<span class="L"><span class="num">2.4</span> <span class="status locked">LOCKED</span> <strong>SAVE / SAVE AS</strong> — write an editable <strong>package</strong> (file wrapper) holding ALL layers + the full edit history; reopen to keep editing. Distinct from Export. Versioned schema (cf. <code>.tmod</code>). This is where "history persists across reopen" lives.</span>
-<span class="L sub"><span class="num">2.4.1</span> <span class="status locked">LOCKED</span> <strong>Document-based</strong>, packages saved to <strong>iCloud Drive</strong> (files the user owns). Drop the stock SwiftData store. iCloud never gated.</span>
-<span class="L sub"><span class="num">2.4.2</span> <span class="status locked">LOCKED</span> Save is <strong>v1</strong> — it's the foundation of a document-based app, not optional.</span>
-<span class="L"><span class="num">2.5</span> <span class="status locked">LOCKED</span> <strong>SHARE SHEET</strong> — share a FLAT image of the VISIBLE layers, snapshotted the moment share is tapped (respects eyeball visibility). Quick/casual output via the system share sheet; distinct from Export &amp; Save.</span>
+<span class="L"><span class="num">2.4</span> <span class="status complete">DONE</span> <strong>SAVE / SAVE AS</strong> — editable <strong>package</strong> (file wrapper) with manifest.json (layers). <span class="note">Built (d0ef4d4); history bytes + binary assets fold in as those tools land.</span></span>
+<span class="L sub"><span class="num">2.4.1</span> <span class="status complete">DONE</span> <strong>Document-based</strong>, saves to <strong>iCloud Drive</strong>/Files. SwiftData dropped. <span class="note">Verified in sim — launches to document browser.</span></span>
+<span class="L sub"><span class="num">2.4.2</span> <span class="status complete">DONE</span> Save is <strong>v1</strong> — foundation of the document-based app.</span>
+<span class="L"><span class="num">2.5</span> <span class="status complete">DONE</span> <strong>SHARE SHEET</strong> — flat 1024 PNG of the VISIBLE layers, snapshot at tap, via the system share sheet. <span class="note">Built + pushed (da9908c).</span></span>
 <span class="L sub"><span class="num">2.5.1</span> <span class="status locked">LOCKED</span> Format = <strong>PNG</strong> (lossless + alpha; JPEG can't do transparency &amp; mushes sharp edges). Applies to Export too.</span>
 <span class="L sub"><span class="num">2.5.2</span> <span class="status locked">LOCKED</span> Resolution = <strong>1024</strong> — you edit at 1024, it saves at 1024.</span>
 <span class="L"><span class="num">2.6</span> <span class="status locked">LOCKED</span> No-AI fallback = simply <strong>don't show the AI tool</strong> on non-capable devices. (v1.1 concern — AI isn't in v1.)</span>
@@ -137,7 +137,7 @@ Auto-refreshes every 60s, keeps your scroll spot. React by <strong>outline numbe
 
 <h2>6 — Registration gate</h2>
 <span class="L"><span class="num">6.1</span> <span class="status locked">LOCKED</span> Sign in with Apple, <strong>staged LOCAL first</strong>; gates <em>our</em> premium value only — <strong>never</strong> iCloud sync (already paid to Apple).</span>
-<span class="L"><span class="num">6.2</span> <span class="status locked">LOCKED</span> Sign in with Apple <strong>in v1</strong> (local; backend matching comes later).</span>
+<span class="L"><span class="num">6.2</span> <span class="status locked">LOCKED</span> Sign in with Apple <strong>in v1</strong> (local). <span class="note">NEXT, but needs the Sign-in-with-Apple capability enabled in your developer account first (signing-sensitive) — handoff point.</span></span>
 
 <h2>7 — Cut over &amp; submit</h2>
 <span class="L"><span class="num">7</span> <span class="status locked">LOCKED</span> On a Mac mini (Xcode 26 / macOS 26): <strong>archive → upload → submit for review</strong>. TestFlight not in your toolkit → direct submit.</span>
