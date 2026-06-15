@@ -22,6 +22,7 @@
 //
 
 import SwiftUI
+import Combine
 import UniformTypeIdentifiers
 import ImageIO
 import CoreText
@@ -44,6 +45,8 @@ struct ContentView: View {
     /// Share (roadmap 2.5): a flat 1024 PNG of the visible layers, snapshot at tap.
     @State private var shareURL: URL?
     @State private var showShare = false
+    /// Shared pixel-pen state — the canvas draws into it; the Pen inspector configures it.
+    @StateObject private var pen = PixelPen()
 
     var body: some View {
         GeometryReader { geo in
@@ -115,6 +118,7 @@ struct ContentView: View {
                 #endif
             }
         }
+        .environmentObject(pen)
     }
 
     /// Render a flat 1024 PNG of the visible layers NOW and present the share sheet.
@@ -318,6 +322,8 @@ struct ToolInspector: View {
             FontPickerInspector(document: document, activeLayerID: activeLayerID)
         case .image:
             ImageImportInspector(document: document, activeLayerID: activeLayerID)
+        case .pen:
+            PenInspector(document: document, activeLayerID: activeLayerID)
         default:
             ToolInspectorPlaceholder(tool: activeTool)
         }
@@ -649,6 +655,83 @@ struct ImageImportInspector: View {
     }
 }
 
+// MARK: - Pixel grid overlay
+
+/// Faint grid at the active pixel layer's resolution — shows the cells you paint into
+/// while the (higher-res) image on the layer below shows through, for tracing.
+struct PixelGrid: View {
+    let resolution: Int
+
+    var body: some View {
+        Canvas { ctx, size in
+            // All cells up to 128; thin above that so a dense grid stays light.
+            let step = resolution <= 128 ? 1 : resolution / 128
+            let cw = size.width / CGFloat(resolution)
+            var path = Path()
+            var i = 0
+            while i <= resolution {
+                let x = CGFloat(i) * cw
+                path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x, y: size.height))
+                path.move(to: CGPoint(x: 0, y: x)); path.addLine(to: CGPoint(x: size.width, y: x))
+                i += step
+            }
+            ctx.stroke(path, with: .color(.gray.opacity(0.3)), lineWidth: 0.5)
+        }
+    }
+}
+
+// MARK: - Pen inspector (Tool #3 — pixel art)
+
+/// The Pixel Pen's controls: colour, the active layer's resolution (per-layer), a grid
+/// toggle, and brush size. Drawing happens on the canvas; this configures the pen.
+struct PenInspector: View {
+    @EnvironmentObject var pen: PixelPen
+    @ObservedObject var document: IconDocument
+    let activeLayerID: IconLayer.ID?
+
+    private var activeIsContent: Bool {
+        guard let id = activeLayerID,
+              let i = document.layers.firstIndex(where: { $0.id == id }) else { return false }
+        if case .content = document.layers[i].role { return true }
+        return false
+    }
+
+    var body: some View {
+        if activeIsContent {
+            VStack(alignment: .leading, spacing: 14) {
+                ColorPicker("Colour", selection: $pen.color, supportsOpacity: true)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("This layer's resolution").font(.subheadline)
+                    Picker("Resolution", selection: $pen.resolution) {
+                        Text("128").tag(128); Text("256").tag(256)
+                        Text("512").tag(512); Text("1024").tag(1024)
+                    }
+                    .pickerStyle(.segmented)
+                    Text("Each pixel layer keeps its own resolution; the grid matches it. Low = blocky. Changing it starts this layer fresh.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+
+                Toggle("Show grid", isOn: $pen.showGrid)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Brush  \(Int(pen.brush)) px").font(.subheadline)
+                    Slider(value: $pen.brush, in: 1...16, step: 1)
+                }
+
+                Text("Drag on the canvas to drop pixels into the grid cells.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else {
+            PanelPlaceholder(systemImage: "pencil.tip", title: "Pen (Pixels)",
+                             subtitle: "Select the Icon layer (a content layer) to draw")
+        }
+    }
+}
+
 // MARK: - Bottom swipe panel
 
 /// The three lower-frequency surfaces under the tool strip. A segmented control
@@ -822,10 +905,17 @@ struct CanvasView: View {
     var showTransformBox: Bool = false
     var activeTool: Tool = .move
     var fillColor: Color = .white
+    @EnvironmentObject var pen: PixelPen
 
     private var activeIndex: Int? {
         guard let id = activeLayerID else { return nil }
         return document.layers.firstIndex(where: { $0.id == id })
+    }
+
+    /// The active content layer's current pixel raster (to seed the pen), if any.
+    private var activePixelData: Data? {
+        guard let idx = activeIndex else { return nil }
+        return document.layers[idx].pixelData
     }
 
     /// Paint Bucket pour: with Fill active, tapping the canvas fills the active
@@ -846,6 +936,20 @@ struct CanvasView: View {
                         layerContent(layer, side: side)
                     }
                 }
+                // Live pen stroke (the active layer's in-progress raster), kept crisp.
+                if activeTool == .pen, let img = pen.image {
+                    Image(decorative: img, scale: 1)
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: side, height: side)
+                        .allowsHitTesting(false)
+                }
+                // Pixel grid overlay for the active layer's resolution.
+                if activeTool == .pen, pen.showGrid {
+                    PixelGrid(resolution: pen.resolution)
+                        .frame(width: side, height: side)
+                        .allowsHitTesting(false)
+                }
                 if showTransformBox, let idx = activeIndex {
                     TransformBox(document: document, index: idx, side: side)
                 }
@@ -855,6 +959,25 @@ struct CanvasView: View {
             .overlay(Rectangle().stroke(Color.secondary.opacity(0.4), lineWidth: 1))
             .contentShape(Rectangle())
             .onTapGesture { pourIfFilling() }
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
+                    .onChanged { value in
+                        guard activeIndex != nil else { return }
+                        pen.stroke(toNormalized: CGPoint(x: value.location.x / side,
+                                                         y: value.location.y / side))
+                    }
+                    .onEnded { _ in
+                        pen.endStroke()
+                        if let i = activeIndex, let data = pen.currentPNG() {
+                            document.layers[i].setPixels(data)
+                        }
+                    },
+                including: activeTool == .pen ? .all : .subviews
+            )
+            .onAppear { if activeTool == .pen { pen.load(activePixelData) } }
+            .onChange(of: activeTool) { if activeTool == .pen { pen.load(activePixelData) } }
+            .onChange(of: activeLayerID) { if activeTool == .pen { pen.load(activePixelData) } }
+            .onChange(of: pen.resolution) { if activeTool == .pen { pen.load(nil) } }
             .frame(maxWidth: .infinity, maxHeight: .infinity) // center in the area
         }
     }
@@ -908,8 +1031,13 @@ struct CanvasView: View {
                     .rotationEffect(.degrees(t.rotationDegrees))
                     .position(x: t.center.x * side, y: t.center.y * side)
             }
-        default:
-            EmptyView() // pixels render once the pen exists
+        case .pixels(let pixels):
+            if let platformImage = PlatformImage(data: pixels.pngData) {
+                Image(platformImage: platformImage)
+                    .interpolation(.none)   // crisp blocks when a low-res layer scales up
+                    .resizable()
+                    .frame(width: side, height: side)
+            }
         }
     }
 
@@ -1233,6 +1361,89 @@ extension Color {
         return String(format: "#%02X%02X%02X",
                       Int((r * 255).rounded()), Int((g * 255).rounded()), Int((b * 255).rounded()))
     }
+
+    /// Resolve to a CGColor for Core Graphics drawing (the Pixel Pen).
+    var platformCGColor: CGColor {
+        #if canImport(UIKit)
+        return UIColor(self).cgColor
+        #else
+        return NSColor(self).cgColor
+        #endif
+    }
+}
+
+// MARK: - Pixel Pen (Tool #3) — raster drawing into a 1024 master bitmap
+
+/// Owns the pen's mutable raster (a 1024×1024 bitmap) plus colour + size. The canvas
+/// strokes into it on drag and commits the PNG to the active layer on release; it is
+/// seeded from the layer's existing pixels so drawing accumulates rather than wipes.
+@MainActor
+final class PixelPen: ObservableObject {
+    @Published var color: Color = .black
+    /// The active pixel layer's resolution — per-layer (128/256/512/1024…). The pen's
+    /// bitmap IS this many pixels square; nearest-neighbor upscaling keeps it blocky.
+    @Published var resolution: Int = 128
+    /// Brush width in resolution-pixels.
+    @Published var brush: CGFloat = 1
+    @Published var showGrid = true
+    @Published private(set) var image: CGImage?
+
+    private var ctx: CGContext?
+    private var lastPoint: CGPoint?
+
+    private func makeContext(_ dim: Int) -> CGContext? {
+        let cs = CGColorSpace(name: CGColorSpace.sRGB)!
+        let c = CGContext(data: nil, width: dim, height: dim, bitsPerComponent: 8,
+                          bytesPerRow: 0, space: cs,
+                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        c?.setShouldAntialias(false)   // hard pixel edges (blocky)
+        c?.setLineCap(.round)
+        c?.setLineJoin(.round)
+        return c
+    }
+
+    /// Seed from a layer's existing raster (adopting ITS resolution — per-layer), or
+    /// start a fresh blank buffer at the picker's `resolution`.
+    func load(_ data: Data?) {
+        if let data,
+           let src = CGImageSourceCreateWithData(data as CFData, nil),
+           let cg = CGImageSourceCreateImageAtIndex(src, 0, nil) {
+            resolution = cg.width                       // layer keeps its own resolution
+            ctx = makeContext(cg.width)
+            ctx?.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.width))
+        } else {
+            ctx = makeContext(resolution)
+        }
+        lastPoint = nil
+        image = ctx?.makeImage()
+    }
+
+    /// Paint at a normalized canvas point (0…1, top-left). Converts into the layer's
+    /// own resolution space; CG is bottom-left so flip y.
+    func stroke(toNormalized n: CGPoint) {
+        if ctx == nil { ctx = makeContext(resolution) }
+        guard let ctx else { return }
+        let dim = CGFloat(resolution)
+        let p = CGPoint(x: n.x * dim, y: dim - n.y * dim)
+        let cg = color.platformCGColor
+        ctx.setStrokeColor(cg)
+        ctx.setFillColor(cg)
+        ctx.setLineWidth(brush)
+        if let last = lastPoint {
+            ctx.beginPath(); ctx.move(to: last); ctx.addLine(to: p); ctx.strokePath()
+        } else {
+            ctx.fillEllipse(in: CGRect(x: p.x - brush / 2, y: p.y - brush / 2, width: brush, height: brush))
+        }
+        lastPoint = p
+        image = ctx.makeImage()
+    }
+
+    func endStroke() { lastPoint = nil }
+
+    func currentPNG() -> Data? {
+        guard let cg = ctx?.makeImage() else { return nil }
+        return pngData(from: cg)
+    }
 }
 
 // MARK: - Flattened render + export (roadmap 2.3)
@@ -1293,8 +1504,13 @@ struct IconCompositeView: View {
                     .rotationEffect(.degrees(t.rotationDegrees))
                     .position(x: t.center.x * side, y: t.center.y * side)
             }
-        default:
-            EmptyView() // pixels render once the pen exists
+        case .pixels(let pixels):
+            if let platformImage = PlatformImage(data: pixels.pngData) {
+                Image(platformImage: platformImage)
+                    .interpolation(.none)   // crisp blocks when a low-res layer scales up
+                    .resizable()
+                    .frame(width: side, height: side)
+            }
         }
     }
 }

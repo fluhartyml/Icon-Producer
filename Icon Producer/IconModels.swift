@@ -137,6 +137,21 @@ struct IconLayer: Identifiable, Codable {
         elements = [LayerElement(content: .image(ImageContent(pngData: pngData)))]
     }
 
+    /// Pixel Pen v1: set this CONTENT layer's raster to `pngData` (the full 1024
+    /// master bitmap the pen draws into). No-op on a background layer.
+    mutating func setPixels(_ pngData: Data) {
+        guard case .content = role else { return }
+        elements = [LayerElement(content: .pixels(PixelContent(pngData: pngData)))]
+    }
+
+    /// This layer's current pixel raster (for seeding the pen), if any.
+    var pixelData: Data? {
+        for element in elements {
+            if case .pixels(let p) = element.content { return p.pngData }
+        }
+        return nil
+    }
+
     /// The SF Symbol currently on this layer, if any (for picker highlighting).
     var symbolElementName: String? {
         for element in elements {
