@@ -190,7 +190,7 @@ struct ToolStrip: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 4) {
+            LazyHGrid(rows: [GridItem(.fixed(44), spacing: 4), GridItem(.fixed(44), spacing: 4)], spacing: 4) {
                 ForEach(Tool.allCases) { tool in
                     Button { activeTool = tool } label: {
                         ToolGlyph(tool: tool)
@@ -241,7 +241,7 @@ struct ToolRail: View {
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 4) {
+            LazyVGrid(columns: [GridItem(.fixed(44), spacing: 4), GridItem(.fixed(44), spacing: 4)], spacing: 4) {
                 ForEach(Tool.allCases) { tool in
                     Button { activeTool = tool } label: {
                         ToolGlyph(tool: tool)
@@ -259,8 +259,9 @@ struct ToolRail: View {
                 }
             }
             .padding(.vertical, 6)
+            .padding(.horizontal, 6)
         }
-        .frame(width: 56)
+        .frame(width: 104)
     }
 }
 
