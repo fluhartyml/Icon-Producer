@@ -353,7 +353,7 @@ struct PaintBucketInspector: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            ColorPicker("Fill colour", selection: $fillColor, supportsOpacity: false)
+            ColorPicker("Fill color", selection: $fillColor, supportsOpacity: false)
 
             if activeIsBackground {
                 Button {
@@ -700,7 +700,7 @@ struct PenInspector: View {
     var body: some View {
         if activeIsContent {
             VStack(alignment: .leading, spacing: 14) {
-                ColorPicker("Colour", selection: $pen.color, supportsOpacity: true)
+                ColorPicker("Color", selection: $pen.color, supportsOpacity: true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("This layer's resolution").font(.subheadline)
