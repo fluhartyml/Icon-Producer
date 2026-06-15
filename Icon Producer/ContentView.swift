@@ -1067,18 +1067,27 @@ struct TransformBox: View {
     let side: CGFloat
     @State private var startCenter: CGPoint?
 
+    /// Unit offsets of the four corners from the box center.
+    private let corners: [CGSize] = [
+        CGSize(width: -1, height: -1), CGSize(width: 1, height: -1),
+        CGSize(width: -1, height: 1),  CGSize(width: 1, height: 1),
+    ]
+
     var body: some View {
         // Guard: the active layer can be deleted while this box is still mounted,
         // leaving `index` pointing past the end of the array for one update pass.
         if index >= 0, index < document.layers.count {
             let t = document.layers[index].transform
             let boxSide = max(24, t.scale * side)
+            let center = CGPoint(x: t.center.x * side, y: t.center.y * side)
+
+            // The movable box.
             Rectangle()
                 .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
                 .background(Color.accentColor.opacity(0.06))
                 .frame(width: boxSide, height: boxSide)
                 .rotationEffect(.degrees(t.rotationDegrees))
-                .position(x: t.center.x * side, y: t.center.y * side)
+                .position(center)
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
@@ -1092,6 +1101,25 @@ struct TransformBox: View {
                         }
                         .onEnded { _ in startCenter = nil }
                 )
+
+            // Corner grabbers — drag to scale (aspect-locked, around the center).
+            ForEach(Array(corners.enumerated()), id: \.offset) { _, off in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.accentColor)
+                    .frame(width: 14, height: 14)
+                    .position(x: center.x + off.width * boxSide / 2,
+                              y: center.y + off.height * boxSide / 2)
+                    .gesture(
+                        DragGesture(minimumDistance: 1, coordinateSpace: .named("canvas"))
+                            .onChanged { value in
+                                guard index < document.layers.count else { return }
+                                let half = max(abs(value.location.x - center.x),
+                                               abs(value.location.y - center.y))
+                                let newScale = min(max((half * 2) / side, 0.1), 4.0)
+                                document.layers[index].transform.scale = newScale
+                            }
+                    )
+            }
         }
     }
 }
