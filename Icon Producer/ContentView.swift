@@ -1054,26 +1054,31 @@ struct TransformBox: View {
     @State private var startCenter: CGPoint?
 
     var body: some View {
-        let t = document.layers[index].transform
-        let boxSide = max(24, t.scale * side)
-        return Rectangle()
-            .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-            .background(Color.accentColor.opacity(0.06))
-            .frame(width: boxSide, height: boxSide)
-            .rotationEffect(.degrees(t.rotationDegrees))
-            .position(x: t.center.x * side, y: t.center.y * side)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
-                    .onChanged { value in
-                        let start = startCenter ?? document.layers[index].transform.center
-                        if startCenter == nil { startCenter = start }
-                        let nx = min(max(start.x + value.translation.width / side, 0), 1)
-                        let ny = min(max(start.y + value.translation.height / side, 0), 1)
-                        document.layers[index].transform.center = CGPoint(x: nx, y: ny)
-                    }
-                    .onEnded { _ in startCenter = nil }
-            )
+        // Guard: the active layer can be deleted while this box is still mounted,
+        // leaving `index` pointing past the end of the array for one update pass.
+        if index >= 0, index < document.layers.count {
+            let t = document.layers[index].transform
+            let boxSide = max(24, t.scale * side)
+            Rectangle()
+                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                .background(Color.accentColor.opacity(0.06))
+                .frame(width: boxSide, height: boxSide)
+                .rotationEffect(.degrees(t.rotationDegrees))
+                .position(x: t.center.x * side, y: t.center.y * side)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
+                        .onChanged { value in
+                            guard index < document.layers.count else { return }
+                            let start = startCenter ?? document.layers[index].transform.center
+                            if startCenter == nil { startCenter = start }
+                            let nx = min(max(start.x + value.translation.width / side, 0), 1)
+                            let ny = min(max(start.y + value.translation.height / side, 0), 1)
+                            document.layers[index].transform.center = CGPoint(x: nx, y: ny)
+                        }
+                        .onEnded { _ in startCenter = nil }
+                )
+        }
     }
 }
 
