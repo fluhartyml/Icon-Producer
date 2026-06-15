@@ -665,18 +665,17 @@ struct PixelGrid: View {
 
     var body: some View {
         Canvas { ctx, size in
-            // All cells up to 128; thin above that so a dense grid stays light.
-            let step = resolution <= 128 ? 1 : resolution / 128
+            // Draw EVERY line for the resolution (no thinning) — one cell = one pixel.
             let cw = size.width / CGFloat(resolution)
+            let ch = size.height / CGFloat(resolution)
             var path = Path()
-            var i = 0
-            while i <= resolution {
+            for i in 0...resolution {
                 let x = CGFloat(i) * cw
                 path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x, y: size.height))
-                path.move(to: CGPoint(x: 0, y: x)); path.addLine(to: CGPoint(x: size.width, y: x))
-                i += step
+                let y = CGFloat(i) * ch
+                path.move(to: CGPoint(x: 0, y: y)); path.addLine(to: CGPoint(x: size.width, y: y))
             }
-            ctx.stroke(path, with: .color(.gray.opacity(0.55)), lineWidth: 0.75)
+            ctx.stroke(path, with: .color(.gray.opacity(0.7)), lineWidth: 1)
         }
     }
 }
@@ -709,8 +708,9 @@ struct PenInspector: View {
                         Text("512").tag(512); Text("1024").tag(1024)
                     }
                     .pickerStyle(.segmented)
-                    Text("Each pixel layer keeps its own resolution; the grid matches it. Low = blocky. Changing it starts this layer fresh.")
+                    Text("Per-layer resolution; the grid matches. Lower = blockier.")
                         .font(.caption2).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Toggle("Show grid", isOn: $pen.showGrid)
@@ -950,7 +950,7 @@ struct CanvasView: View {
                 }
                 // Pixel grid overlay for the active layer's resolution.
                 if activeTool == .pen, pen.showGrid {
-                    PixelGrid(resolution: pen.resolution)
+                    PixelGrid(resolution: 2)   // TEMP: verify the grid renders as 2×2 blocks
                         .frame(width: side, height: side)
                         .allowsHitTesting(false)
                 }
