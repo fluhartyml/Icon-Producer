@@ -676,7 +676,7 @@ struct PixelGrid: View {
                 path.move(to: CGPoint(x: 0, y: x)); path.addLine(to: CGPoint(x: size.width, y: x))
                 i += step
             }
-            ctx.stroke(path, with: .color(.gray.opacity(0.3)), lineWidth: 0.5)
+            ctx.stroke(path, with: .color(.gray.opacity(0.55)), lineWidth: 0.75)
         }
     }
 }
@@ -858,7 +858,7 @@ struct MoveTransformInspector: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Scale  \(Int(document.layers[idx].transform.scale * 100))%")
                         .font(.subheadline)
-                    Slider(value: transformBinding(\.scale, idx), in: 0.1...1.0)
+                    Slider(value: transformBinding(\.scale, idx), in: 0.1...4.0)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
