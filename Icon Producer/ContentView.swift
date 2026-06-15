@@ -801,7 +801,9 @@ struct LayerPanel: View {
                 .onMove(perform: move)
             }
             .listStyle(.plain)
-            .environment(\.editMode, .constant(.active)) // always-on reorder handles
+            #if os(iOS)
+            .environment(\.editMode, .constant(.active)) // always-on reorder handles (iOS only)
+            #endif
         }
         .alert("Rename Layer", isPresented: isRenaming) {
             TextField("Name", text: $draftName)
