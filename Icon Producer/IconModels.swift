@@ -130,6 +130,13 @@ struct IconLayer: Identifiable, Codable {
             bold: bold, italic: italic, underline: underline, outline: outline)))]
     }
 
+    /// Image tool v1: place imported PNG bytes as an image element on this CONTENT
+    /// layer, kept at native resolution (the canvas scales it for display). No-op on bg.
+    mutating func setImage(_ pngData: Data) {
+        guard case .content = role else { return }
+        elements = [LayerElement(content: .image(ImageContent(pngData: pngData)))]
+    }
+
     /// The SF Symbol currently on this layer, if any (for picker highlighting).
     var symbolElementName: String? {
         for element in elements {

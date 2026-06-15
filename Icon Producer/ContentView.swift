@@ -316,6 +316,8 @@ struct ToolInspector: View {
             SymbolPickerInspector(document: document, activeLayerID: activeLayerID)
         case .glyph:
             FontPickerInspector(document: document, activeLayerID: activeLayerID)
+        case .image:
+            ImageImportInspector(document: document, activeLayerID: activeLayerID)
         default:
             ToolInspectorPlaceholder(tool: activeTool)
         }
@@ -587,6 +589,66 @@ struct FontPickerInspector: View {
     }
 }
 
+// MARK: - Image import inspector (Tool: Image — manual import)
+
+/// Import an image file onto the active CONTENT layer. Re-encoded to PNG and kept at
+/// native resolution; the canvas scales it to fit the icon (Move tool re-sizes it).
+/// v1 stores the bytes in the manifest; sibling-file storage in the package is a
+/// follow-up. (Seatrial: the resolution/scaling behaviour is the part to shake down.)
+struct ImageImportInspector: View {
+    @ObservedObject var document: IconDocument
+    let activeLayerID: IconLayer.ID?
+    @State private var importing = false
+    @State private var failed = false
+
+    private var activeIndex: Int? {
+        guard let id = activeLayerID else { return nil }
+        return document.layers.firstIndex(where: { $0.id == id })
+    }
+    private var activeIsContent: Bool {
+        guard let i = activeIndex else { return false }
+        if case .content = document.layers[i].role { return true }
+        return false
+    }
+
+    var body: some View {
+        if activeIsContent {
+            VStack(alignment: .leading, spacing: 12) {
+                Button { importing = true } label: {
+                    Label("Import Image…", systemImage: "photo.badge.plus")
+                }
+                .buttonStyle(.borderedProminent)
+                Text("Drops an image onto this layer at native resolution, scaled to fit the icon. Use Move to resize/position it.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if failed {
+                    Text("Couldn't read that image.").font(.caption).foregroundStyle(.red)
+                }
+                Spacer()
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .fileImporter(isPresented: $importing, allowedContentTypes: [.image]) { result in
+                failed = false
+                guard case .success(let url) = result else { return }
+                load(url)
+            }
+        } else {
+            PanelPlaceholder(systemImage: "photo",
+                             title: "Image",
+                             subtitle: "Select the Icon layer (a content layer) to import an image")
+        }
+    }
+
+    private func load(_ url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let raw = try? Data(contentsOf: url),
+              let png = pngData(fromImageData: raw),
+              let i = activeIndex else { failed = true; return }
+        document.layers[i].setImage(png)
+    }
+}
+
 // MARK: - Bottom swipe panel
 
 /// The three lower-frequency surfaces under the tool strip. A segmented control
@@ -837,8 +899,17 @@ struct CanvasView: View {
                 .foregroundStyle(Color(hex: text.colorHex) ?? .primary)
                 .rotationEffect(.degrees(t.rotationDegrees))
                 .position(x: t.center.x * side, y: t.center.y * side)
+        case .image(let imageContent):
+            if let platformImage = PlatformImage(data: imageContent.pngData) {
+                Image(platformImage: platformImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: side * t.scale, height: side * t.scale)
+                    .rotationEffect(.degrees(t.rotationDegrees))
+                    .position(x: t.center.x * side, y: t.center.y * side)
+            }
         default:
-            EmptyView() // pixels / image render once their tools exist
+            EmptyView() // pixels render once the pen exists
         }
     }
 
@@ -1213,8 +1284,17 @@ struct IconCompositeView: View {
                 .foregroundStyle(Color(hex: text.colorHex) ?? .primary)
                 .rotationEffect(.degrees(t.rotationDegrees))
                 .position(x: t.center.x * side, y: t.center.y * side)
+        case .image(let imageContent):
+            if let platformImage = PlatformImage(data: imageContent.pngData) {
+                Image(platformImage: platformImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: side * t.scale, height: side * t.scale)
+                    .rotationEffect(.degrees(t.rotationDegrees))
+                    .position(x: t.center.x * side, y: t.center.y * side)
+            }
         default:
-            EmptyView() // pixels / image render once their tools exist
+            EmptyView() // pixels render once the pen exists
         }
     }
 }
@@ -1229,6 +1309,23 @@ func pngData(from cgImage: CGImage) -> Data? {
     guard CGImageDestinationFinalize(dest) else { return nil }
     return data as Data
 }
+
+/// Re-encode any imported image data (PNG/JPEG/HEIC/…) to PNG bytes (model rule:
+/// PNG only — alpha + lossless, never JPG).
+func pngData(fromImageData data: Data) -> Data? {
+    guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+          let cg = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
+    return pngData(from: cg)
+}
+
+/// Cross-platform image type + a SwiftUI Image bridge, for rendering imported PNGs.
+#if canImport(UIKit)
+typealias PlatformImage = UIImage
+extension Image { init(platformImage: UIImage) { self.init(uiImage: platformImage) } }
+#elseif canImport(AppKit)
+typealias PlatformImage = NSImage
+extension Image { init(platformImage: NSImage) { self.init(nsImage: platformImage) } }
+#endif
 
 /// Export deliverable (roadmap 2.3): a FOLDER of named PNG sizes, no Contents.json.
 /// Write-only; the user drags the PNGs into Xcode's AppIcon wells themselves.
