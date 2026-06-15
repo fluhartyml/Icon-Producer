@@ -44,7 +44,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .shape:      "Shape"
         case .path:       "Path (Vector)"
         case .text:       "Text"
-        case .glyph:      "Glyph"
+        case .glyph:      "Font"
         case .symbol:     "Symbol (SF Symbols)"
         case .image:      "Image"
         case .zoom:       "Zoom"

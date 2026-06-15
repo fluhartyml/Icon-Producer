@@ -24,6 +24,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import ImageIO
+import CoreText
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -313,6 +314,8 @@ struct ToolInspector: View {
                                  fillColor: $fillColor)
         case .symbol:
             SymbolPickerInspector(document: document, activeLayerID: activeLayerID)
+        case .glyph:
+            FontPickerInspector(document: document, activeLayerID: activeLayerID)
         default:
             ToolInspectorPlaceholder(tool: activeTool)
         }
@@ -455,6 +458,132 @@ struct SymbolPickerInspector: View {
     private func place(_ name: String) {
         guard let i = activeIndex else { return }
         document.layers[i].setSymbol(name, tintHex: tint.hexString() ?? "#000000")
+    }
+}
+
+// MARK: - Font picker inspector (Tool: "F" — font glyphs, e.g. Wingdings)
+
+/// Browse an installed font's glyph repertoire and place a character on the active
+/// CONTENT layer as a styled text element. Distinct from "SF" (SF Symbols). The font
+/// LIST renders each name in its own font, reflecting the live style toggles. Outline
+/// is stored but its rendering is a follow-up (no stock SwiftUI text-outline).
+struct FontPickerInspector: View {
+    @ObservedObject var document: IconDocument
+    let activeLayerID: IconLayer.ID?
+
+    @State private var family: String = FontPickerInspector.families.first ?? "Helvetica"
+    @State private var tint: Color = .black
+    @State private var bold = false
+    @State private var italic = false
+    @State private var underline = false
+    @State private var outline = false
+    @State private var glyphs: [String] = []
+
+    /// Installed font family names (Core Text — cross-platform), sorted.
+    static let families: [String] =
+        ((CTFontManagerCopyAvailableFontFamilyNames() as? [String]) ?? []).sorted()
+
+    private var activeIndex: Int? {
+        guard let id = activeLayerID else { return nil }
+        return document.layers.firstIndex(where: { $0.id == id })
+    }
+    private var activeIsContent: Bool {
+        guard let i = activeIndex else { return false }
+        if case .content = document.layers[i].role { return true }
+        return false
+    }
+
+    private func styled(_ text: Text) -> Text {
+        text.bold(bold).italic(italic).underline(underline)
+    }
+
+    var body: some View {
+        if activeIsContent {
+            VStack(alignment: .leading, spacing: 10) {
+                // Style toggles
+                HStack(spacing: 8) {
+                    styleToggle("bold", "Bold", $bold)
+                    styleToggle("italic", "Italic", $italic)
+                    styleToggle("underline", "Underline", $underline)
+                    styleToggle("character.textbox", "Outline", $outline)
+                }
+
+                Text("Font").font(.caption).foregroundStyle(.secondary)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 2) {
+                        ForEach(Self.families, id: \.self) { fam in
+                            Button { family = fam; recomputeGlyphs() } label: {
+                                styled(Text(fam).font(.custom(fam, size: 16)))
+                                    .lineLimit(1)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 4).padding(.horizontal, 6)
+                                    .background(RoundedRectangle(cornerRadius: 6)
+                                        .fill(fam == family ? Color.accentColor.opacity(0.2) : Color.clear))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .frame(maxHeight: 150)
+
+                ColorPicker("Tint", selection: $tint, supportsOpacity: false)
+
+                Text("Glyph").font(.caption).foregroundStyle(.secondary)
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 38), spacing: 6)], spacing: 6) {
+                        ForEach(glyphs, id: \.self) { g in
+                            Button { place(g) } label: {
+                                styled(Text(g).font(.custom(family, size: 20)))
+                                    .frame(width: 38, height: 38)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.gray.opacity(0.12)))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Glyph \(g)")
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .onAppear { if glyphs.isEmpty { recomputeGlyphs() } }
+        } else {
+            PanelPlaceholder(systemImage: "character.book.closed",
+                             title: "Font",
+                             subtitle: "Select the Icon layer (a content layer) to place a font glyph")
+        }
+    }
+
+    @ViewBuilder
+    private func styleToggle(_ icon: String, _ label: String, _ flag: Binding<Bool>) -> some View {
+        Button { flag.wrappedValue.toggle() } label: {
+            Image(systemName: icon)
+                .frame(width: 36, height: 30)
+                .background(RoundedRectangle(cornerRadius: 6)
+                    .fill(flag.wrappedValue ? Color.accentColor.opacity(0.25) : Color.gray.opacity(0.12)))
+        }
+        .buttonStyle(.plain)
+        .help(label)
+        .accessibilityLabel(label)
+    }
+
+    /// The chosen family's supported characters (its repertoire), bounded for speed.
+    private func recomputeGlyphs() {
+        let font = CTFontCreateWithName(family as CFString, 24, nil)
+        let set = CTFontCopyCharacterSet(font) as CharacterSet
+        var out: [String] = []
+        for value in 0x21...0x33FF {
+            guard let scalar = Unicode.Scalar(value), set.contains(scalar) else { continue }
+            out.append(String(scalar))
+            if out.count >= 1000 { break }
+        }
+        glyphs = out
+    }
+
+    private func place(_ glyph: String) {
+        guard let i = activeIndex else { return }
+        document.layers[i].setText(glyph, fontName: family, tintHex: tint.hexString() ?? "#000000",
+                                   bold: bold, italic: italic, underline: underline, outline: outline)
     }
 }
 
@@ -699,8 +828,17 @@ struct CanvasView: View {
                 .frame(width: side * t.scale, height: side * t.scale)
                 .rotationEffect(.degrees(t.rotationDegrees))
                 .position(x: t.center.x * side, y: t.center.y * side)
+        case .text(let text):
+            Text(text.string)
+                .font(.custom(text.fontName, size: side * text.sizeFraction * t.scale))
+                .bold(text.bold)
+                .italic(text.italic)
+                .underline(text.underline)
+                .foregroundStyle(Color(hex: text.colorHex) ?? .primary)
+                .rotationEffect(.degrees(t.rotationDegrees))
+                .position(x: t.center.x * side, y: t.center.y * side)
         default:
-            EmptyView() // pixels / image / text render once their tools exist
+            EmptyView() // pixels / image render once their tools exist
         }
     }
 
@@ -1066,8 +1204,17 @@ struct IconCompositeView: View {
                 .frame(width: side * t.scale, height: side * t.scale)
                 .rotationEffect(.degrees(t.rotationDegrees))
                 .position(x: t.center.x * side, y: t.center.y * side)
+        case .text(let text):
+            Text(text.string)
+                .font(.custom(text.fontName, size: side * text.sizeFraction * t.scale))
+                .bold(text.bold)
+                .italic(text.italic)
+                .underline(text.underline)
+                .foregroundStyle(Color(hex: text.colorHex) ?? .primary)
+                .rotationEffect(.degrees(t.rotationDegrees))
+                .position(x: t.center.x * side, y: t.center.y * side)
         default:
-            EmptyView() // pixels / image / text render once their tools exist
+            EmptyView() // pixels / image render once their tools exist
         }
     }
 }

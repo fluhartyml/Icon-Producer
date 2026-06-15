@@ -118,6 +118,18 @@ struct IconLayer: Identifiable, Codable {
         elements = [LayerElement(content: .symbol(SymbolContent(systemName: systemName, tintHex: tintHex)))]
     }
 
+    /// Font tool "F" v1: place a single font glyph (a character in a chosen font)
+    /// as a text element on this CONTENT layer. Replaces existing content. No-op on
+    /// a background layer. SF Symbols are the separate "SF" tool; this is fonts only.
+    mutating func setText(_ string: String, fontName: String, tintHex: String,
+                          bold: Bool = false, italic: Bool = false,
+                          underline: Bool = false, outline: Bool = false) {
+        guard case .content = role else { return }
+        elements = [LayerElement(content: .text(TextContent(
+            string: string, fontName: fontName, sizeFraction: 0.8, colorHex: tintHex,
+            bold: bold, italic: italic, underline: underline, outline: outline)))]
+    }
+
     /// The SF Symbol currently on this layer, if any (for picker highlighting).
     var symbolElementName: String? {
         for element in elements {
@@ -199,6 +211,12 @@ struct TextContent: Codable {
     /// Point size as a fraction of the master edge (can reach 1.0 = canvas-filling).
     var sizeFraction = 0.8
     var colorHex = "#000000"
+    /// Style toggles (F tool). `outline` is stored now; its rendering is a follow-up
+    /// (no stock SwiftUI text-outline — needs custom glyph stroking).
+    var bold = false
+    var italic = false
+    var underline = false
+    var outline = false
 }
 
 struct SymbolContent: Codable {
