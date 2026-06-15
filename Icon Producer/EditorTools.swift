@@ -69,3 +69,80 @@ enum Tool: String, CaseIterable, Identifiable {
         }
     }
 }
+
+// MARK: - Paint Bucket glyph (style B — solid bucket, colored pour)
+
+/// Vector paint bucket drawn with Canvas — used for the Fill tool's strip glyph
+/// (static colour) and the Fill cursor (live fill colour). Style "B" from the
+/// 2026-06-15 concept mockup: solid body, a colored pour, a small puddle.
+/// `pourTip` is where the paint lands (unit space, origin top-left) → the cursor
+/// hotspot must sit there so the cursor aims where the fill goes.
+struct PaintBucketGlyph: View {
+    /// The pouring paint colour. Static amber for the toolbar glyph; the cursor
+    /// passes the user's live fill colour (the easter egg).
+    var pourColor: Color = Color(red: 1.0, green: 0.69, blue: 0.0)
+    var bodyColor: Color = Color(white: 0.85)
+    var outline: Color = Color(white: 0.42)
+
+    /// Where the pour lands, as a fraction of the glyph box (origin top-left).
+    /// Kept in sync with the drawing below so the cursor hotspot matches.
+    static let pourTip = CGPoint(x: 0.30, y: 0.92)
+
+    var body: some View {
+        Canvas { ctx, size in
+            let s = min(size.width, size.height)
+            func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x / 100 * s, y: y / 100 * s) }
+            func r(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> CGRect {
+                CGRect(x: x / 100 * s, y: y / 100 * s, width: w / 100 * s, height: h / 100 * s)
+            }
+            let lw = max(1, s * 0.035)
+
+            // Bucket body (tilted trapezoid, opening up-right).
+            var bodyPath = Path()
+            bodyPath.move(to: p(34, 22))
+            bodyPath.addLine(to: p(80, 14))
+            bodyPath.addLine(to: p(72, 60))
+            bodyPath.addLine(to: p(46, 66))
+            bodyPath.closeSubpath()
+            ctx.fill(bodyPath, with: .color(bodyColor))
+            ctx.stroke(bodyPath, with: .color(outline), lineWidth: lw)
+
+            // Handle arc over the opening.
+            var handle = Path()
+            handle.move(to: p(37, 18))
+            handle.addQuadCurve(to: p(79, 11), control: p(58, -16))
+            ctx.stroke(handle, with: .color(outline), lineWidth: lw)
+
+            // Rim (open top) drawn over the body's top edge.
+            let rim = Path(ellipseIn: r(33, 8, 48, 16))
+            ctx.fill(rim, with: .color(bodyColor))
+            ctx.stroke(rim, with: .color(outline), lineWidth: lw)
+            ctx.fill(Path(ellipseIn: r(37, 11, 40, 10)), with: .color(outline.opacity(0.45)))
+
+            // Pour stream from the lower-left lip down to the pour tip.
+            var pour = Path()
+            pour.move(to: p(47, 56))
+            pour.addCurve(to: p(30, 90), control1: p(40, 72), control2: p(31, 80))
+            ctx.stroke(pour, with: .color(pourColor),
+                       style: StrokeStyle(lineWidth: s * 0.10, lineCap: .round))
+
+            // Puddle where it lands (the hotspot point).
+            ctx.fill(Path(ellipseIn: r(22, 88, 16, 7)), with: .color(pourColor))
+        }
+    }
+}
+
+/// The glyph shown for a tool in the strip/rail: the custom paint bucket for Fill,
+/// otherwise the tool's SF Symbol. Keeps the SF-Symbol look for every other tool.
+struct ToolGlyph: View {
+    let tool: Tool
+
+    var body: some View {
+        if tool == .fill {
+            PaintBucketGlyph().frame(width: 24, height: 24)
+        } else {
+            Image(systemName: tool.systemImage)
+                .font(.system(size: 18))
+        }
+    }
+}

@@ -188,8 +188,7 @@ struct ToolStrip: View {
             HStack(spacing: 4) {
                 ForEach(Tool.allCases) { tool in
                     Button { activeTool = tool } label: {
-                        Image(systemName: tool.systemImage)
-                            .font(.system(size: 18))
+                        ToolGlyph(tool: tool)
                             .frame(width: 44, height: 44)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
@@ -240,8 +239,7 @@ struct ToolRail: View {
             VStack(spacing: 4) {
                 ForEach(Tool.allCases) { tool in
                     Button { activeTool = tool } label: {
-                        Image(systemName: tool.systemImage)
-                            .font(.system(size: 18))
+                        ToolGlyph(tool: tool)
                             .frame(width: 44, height: 44)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
@@ -779,13 +777,22 @@ struct LayerPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if showsHeader {
-                Text("Layers")
-                    .font(.headline)
-                    .padding(.horizontal)
-                    .padding(.vertical, 10)
-                Divider()
+            // Header row: title (when shown) + the always-present "+" to add a layer
+            // (L3 — top-right add). In the portrait swipe panel the segmented control
+            // already says "Layers", so the title is hidden but the "+" stays.
+            HStack {
+                if showsHeader { Text("Layers").font(.headline) }
+                Spacer()
+                Button { addLayer() } label: {
+                    Image(systemName: "plus").font(.headline)
+                }
+                .buttonStyle(.plain)
+                .help("Add a layer")
+                .accessibilityLabel("Add a layer")
             }
+            .padding(.horizontal)
+            .padding(.vertical, showsHeader ? 10 : 6)
+            Divider()
             List {
                 ForEach(Array(document.layers.reversed())) { layer in
                     LayerRow(
@@ -793,12 +800,15 @@ struct LayerPanel: View {
                         isActive: layer.id == activeLayerID,
                         onActivate: { activeLayerID = layer.id },
                         onToggleVisibility: { toggleVisibility(layer.id) },
-                        onRename: { beginRename(layer) }
+                        onRename: { beginRename(layer) },
+                        onDuplicate: { duplicate(layer.id) },
+                        onDelete: { delete(layer.id) }
                     )
                     .listRowBackground(layer.id == activeLayerID
                                        ? Color.accentColor.opacity(0.15) : nil)
                 }
                 .onMove(perform: move)
+                .onDelete(perform: deleteAt)
             }
             .listStyle(.plain)
             #if os(iOS)
@@ -836,6 +846,39 @@ struct LayerPanel: View {
         }
     }
 
+    /// L3 — add a new blank content layer on TOP of the stack, and select it.
+    private func addLayer() {
+        let layer = IconLayer(name: "Layer \(document.layers.count + 1)", role: .content)
+        document.layers.append(layer)          // end of array = top of the visual stack
+        activeLayerID = layer.id
+    }
+
+    /// L4.1 — exact copy (fill/elements, transform, opacity, visibility), named
+    /// "<name> copy," new UUID, inserted directly ABOVE the original, selected.
+    private func duplicate(_ id: IconLayer.ID) {
+        guard let i = document.layers.firstIndex(where: { $0.id == id }) else { return }
+        var copy = document.layers[i]
+        copy.id = UUID()
+        copy.name = document.layers[i].name + " copy"
+        document.layers.insert(copy, at: i + 1)   // i+1 = one step toward the top
+        activeLayerID = copy.id
+    }
+
+    /// L4/L5 — delete a layer (context menu).
+    private func delete(_ id: IconLayer.ID) {
+        document.layers.removeAll { $0.id == id }
+        if activeLayerID == id { activeLayerID = nil }
+    }
+
+    /// L5 — swipe-to-delete. Offsets index into the reversed (top-first) display,
+    /// so map them back to layer ids before removing.
+    private func deleteAt(_ offsets: IndexSet) {
+        let topFirst = Array(document.layers.reversed())
+        let ids = offsets.map { topFirst[$0].id }
+        document.layers.removeAll { ids.contains($0.id) }
+        if let active = activeLayerID, ids.contains(active) { activeLayerID = nil }
+    }
+
     /// The list shows the stack reversed (top-first), so reorder in that reversed
     /// space and write the un-reversed result back to the bottom-to-top array.
     private func move(from source: IndexSet, to destination: Int) {
@@ -851,6 +894,8 @@ struct LayerRow: View {
     let onActivate: () -> Void
     let onToggleVisibility: () -> Void
     let onRename: () -> Void
+    let onDuplicate: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
@@ -876,9 +921,10 @@ struct LayerRow: View {
         }
         .padding(.vertical, 2)
         .contextMenu {
-            Button(action: onRename) {
-                Label("Rename", systemImage: "pencil")
-            }
+            Button(action: onRename) { Label("Rename", systemImage: "pencil") }
+            Button(action: onDuplicate) { Label("Duplicate", systemImage: "plus.square.on.square") }
+            Divider()
+            Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
         }
     }
 }
