@@ -51,9 +51,55 @@ struct ContentView: View {
     /// Shared pixel-pen state — the canvas draws into it; the Pen inspector configures it.
     @StateObject private var pen = PixelPen()
 
+    /// True on iPhone (any orientation) — gates the phone-only layout so it never
+    /// touches the iPad/Mac views. Size class can't decide this: an iPhone Pro Max in
+    /// landscape reports `.regular` width, same as an iPad — so use the device idiom.
+    #if os(iOS)
+    private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
+    #else
+    private var isPhone: Bool { false }
+    #endif
+
+    /// iPhone-only layout, isolated from iPad. Canvas gets the room; the tool box is a
+    /// single scrollable line; Tool/Layers/History stay in the existing swipe panel.
+    /// Portrait stacks it; landscape puts the canvas on the left, tools+panel on the right.
+    @ViewBuilder
+    private func phoneLayout(geo: GeometryProxy) -> some View {
+        if geo.size.height > geo.size.width {
+            VStack(spacing: 0) {
+                canvasArea
+                    .frame(height: geo.size.height / 2)
+                Divider()
+                ToolStrip(activeTool: $activeTool, lines: 1)
+                ActiveToolLabel(tool: activeTool)
+                Divider()
+                BottomPanel.PanelView(document: document, activeTool: activeTool,
+                                      activeLayerID: $activeLayerID, selection: $bottomPanel,
+                                      fillColor: $fillColor)
+            }
+        } else {
+            HStack(spacing: 0) {
+                canvasArea
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Divider()
+                VStack(spacing: 0) {
+                    ToolStrip(activeTool: $activeTool, lines: 1)
+                    ActiveToolLabel(tool: activeTool)
+                    Divider()
+                    BottomPanel.PanelView(document: document, activeTool: activeTool,
+                                          activeLayerID: $activeLayerID, selection: $bottomPanel,
+                                          fillColor: $fillColor)
+                }
+                .frame(width: 300)
+            }
+        }
+    }
+
     var body: some View {
         GeometryReader { geo in
-            if geo.size.height > geo.size.width {
+            if isPhone {
+                phoneLayout(geo: geo)
+            } else if geo.size.height > geo.size.width {
                 // Portrait: canvas top half, then tool strip + swipe panel.
                 VStack(spacing: 0) {
                     canvasArea
@@ -197,10 +243,16 @@ struct ContentView: View {
 /// there are more tools than fit. Tapping a tool makes it the active tool.
 struct ToolStrip: View {
     @Binding var activeTool: Tool
+    /// Rows of tools: 2 on iPad (the default), 1 on iPhone (a single scrollable line).
+    var lines: Int = 2
+
+    private var rows: [GridItem] {
+        Array(repeating: GridItem(.fixed(44), spacing: 4), count: lines)
+    }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            LazyHGrid(rows: [GridItem(.fixed(44), spacing: 4), GridItem(.fixed(44), spacing: 4)], spacing: 4) {
+            LazyHGrid(rows: rows, spacing: 4) {
                 ForEach(Tool.allCases) { tool in
                     Button { activeTool = tool } label: {
                         ToolGlyph(tool: tool)
