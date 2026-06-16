@@ -171,7 +171,7 @@ struct ContentView: View {
         // the UIScrollView approach fought Auto Layout so pinch didn't zoom.
         // Re-wire when the PIXEL PEN needs zoom and we can iterate it properly.
         CanvasView(document: document,
-                   activeLayerID: activeLayerID,
+                   activeLayerID: $activeLayerID,
                    showTransformBox: activeTool == .move,
                    activeTool: activeTool,
                    fillColor: fillColor)
@@ -943,7 +943,7 @@ struct MoveTransformInspector: View {
 /// When Move is active and a layer is selected, draws a draggable transform box.
 struct CanvasView: View {
     @ObservedObject var document: IconDocument
-    var activeLayerID: IconLayer.ID? = nil
+    @Binding var activeLayerID: IconLayer.ID?
     var showTransformBox: Bool = false
     var activeTool: Tool = .move
     var fillColor: Color = .white
@@ -1032,10 +1032,14 @@ struct CanvasView: View {
             .onChange(of: activeLayerID) { if activeTool == .pen { pen.load(activePixelData) } }
             .onChange(of: pen.resolution) {
                 guard activeTool == .pen else { return }
-                pen.changeResolution()   // resample, don't erase
-                if let i = activeIndex, let data = pen.currentPNG() {
-                    document.layers[i].setPixels(data)
+                // Resolution locks once a layer has pixels — changing it starts a NEW
+                // pixel layer at the chosen resolution rather than altering the old art.
+                if let i = activeIndex, document.layers[i].pixelData != nil {
+                    let layer = IconLayer(name: "Pixels @\(pen.resolution)", role: .content)
+                    document.layers.append(layer)
+                    activeLayerID = layer.id
                 }
+                pen.load(nil)   // fresh blank bitmap at the new resolution
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity) // center in the area
         }
@@ -1545,19 +1549,6 @@ final class PixelPen: ObservableObject {
     }
 
     func endStroke() { lastPoint = nil }
-
-    /// Resample the current art into the (already-updated) resolution instead of
-    /// clearing it — so changing the grid size KEEPS the pixels (nearest-neighbor,
-    /// stays blocky) rather than erasing.
-    func changeResolution() {
-        let old = ctx?.makeImage()
-        let c = makeContext(resolution)
-        c?.interpolationQuality = .none
-        if let old { c?.draw(old, in: CGRect(x: 0, y: 0, width: resolution, height: resolution)) }
-        ctx = c
-        lastPoint = nil
-        image = ctx?.makeImage()
-    }
 
     func currentPNG() -> Data? {
         guard let cg = ctx?.makeImage() else { return nil }
