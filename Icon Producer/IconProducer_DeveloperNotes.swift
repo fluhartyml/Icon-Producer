@@ -295,6 +295,25 @@
 //        iPad too -> add Photoshop-style SINGLE-KEY tool shortcuts (V=move, etc.)
 //        for power users. Pointer is also present -> hover tooltips work on iPad.
 //        Not now; noted as a real win once tools are live.
+//      • FUTURE — PRINT + NON-ICON CANVAS SIZES + DPI (Michael 2026-06-16): grow the
+//        app beyond square app-icons into print/document output. Three pieces:
+//          (1) PRINT THE CANVAS — send to a physical printer OR export as PDF.
+//          (2) CANVAS-SIZE PICKER with presets (inches): 8.5x11 (letter),
+//              11x17 (tabloid/ledger), 3x5 (index card), 2x3 (business card),
+//              PLUS a CUSTOM override — user types exact dimensions "nnnnn x nnnn".
+//              [implies non-square canvases — today's model is a square 1024 master,
+//               so this needs a width/height canvas, not just `canvasSize: Int`.]
+//          (3) RESOLUTION (DPI) PICKER: 72 dpi (web), 300 dpi (laser/thermal),
+//              and a print-shop tier — Michael said "400 or whatever printer shops
+//              standard dpis are." Common print-shop standards to confirm with him:
+//              300 (standard), 600 (high-quality laser / line art), 1200 (fine).
+//              PLUS a CUSTOM override — user types an exact "nnn dpi".
+//          Both pickers = preset list + a "Custom…" entry for an explicit value
+//          (Michael 2026-06-16). Presets are shortcuts, never a ceiling.
+//        NOTE (no scope cut — capture in full): this pushes Icon Producer toward a
+//        general print-design tool, not only an app-icon maker. Worth a product-
+//        positioning decision later (icon maker that ALSO prints, vs. broaden the
+//        app's identity). Recorded as Michael's vision; do not trim.
 //      • STATUS / HINT BAR (Michael 2026-06-11): a text bar BELOW THE CANVAS (both
 //        orientations) = the app's single VOICE to the user. PRIMARY PURPOSE: it
 //        solves the NO-HOVER problem on touch — desktop rollover/hover hints have
