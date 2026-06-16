@@ -319,6 +319,21 @@
 //        tool is broader, so "Icon Producer" becomes a MODE, not the product. Fits
 //        Michael's standing naming rule: prefer an umbrella noun with room to grow
 //        over a narrow-specific name. Decide the new name alongside the print build.
+//        CHOSEN FRONT-RUNNER (Michael 2026-06-16): **STAMPA — Graphic Arts.**
+//          - "Stampa" = Italian for "print / the press," and contains "stamp" (a small
+//            mark you press) — so it marries the ICON side (a stamp/mark) and the PRESS
+//            side (printing) in one spellable word.
+//          - Survived a long naming gauntlet where every other candidate was taken or
+//            flawed: Pixel Press / Imprint / Imprintshop / Seal Press / Pixel Shop /
+//            Pixel Seal / Prelum (sounds "preliminary") / Vellum (taken — Mac book app) /
+//            Calque (unspellable) / Signum (taken). Stampa came back clean + spellable.
+//          - "Graphic Arts" descriptor is deliberate: historically it spans BOTH graphic
+//            design AND printmaking, covering the icon side and the print side.
+//          - For Michael's English-only / Americas-only market, "Stampa" reads as an
+//            arbitrary, distinctive word (a trademark STRENGTH) — but note La Stampa
+//            (Italian newspaper) + generic Italian use exist (different field/region).
+//          - ⚠️ STILL NEEDS A FORMAL USPTO/TESS SEARCH (or trademark attorney) BEFORE
+//            FILING — the web screen here is preliminary, not legal clearance.
 //      • STATUS / HINT BAR (Michael 2026-06-11): a text bar BELOW THE CANVAS (both
 //        orientations) = the app's single VOICE to the user. PRIMARY PURPOSE: it
 //        solves the NO-HOVER problem on touch — desktop rollover/hover hints have
