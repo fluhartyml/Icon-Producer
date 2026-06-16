@@ -704,11 +704,12 @@ struct PenInspector: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("This layer's resolution").font(.subheadline)
                     Picker("Resolution", selection: $pen.resolution) {
-                        Text("2").tag(2)
+                        Text("2 (control)").tag(2)
+                        Text("16").tag(16); Text("32").tag(32); Text("64").tag(64)
                         Text("128").tag(128); Text("256").tag(256)
                         Text("512").tag(512); Text("1024").tag(1024)
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
                     Text("Per-layer resolution; the grid matches. Lower = blockier.")
                         .font(.caption2).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
