@@ -779,6 +779,15 @@ struct PenInspector: View {
                         get: { Double(resolutionRungs.firstIndex(of: pen.resolution) ?? 4) },
                         set: { pen.resolution = resolutionRungs[min(max(Int($0.rounded()), 0), resolutionRungs.count - 1)] }
                     ), in: 0...Double(resolutionRungs.count - 1), step: 1)
+                    // Ruler graduations: first / middle / last detent (indices 0, 5, 10 of 11
+                    // rungs). Deliberately below the usual min font size — these are reference
+                    // ticks, not body text. Start minimal (3 labels); add more if it reads sparse.
+                    HStack {
+                        Text("2"); Spacer(); Text("32"); Spacer(); Text("1024")
+                    }
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, -2)
                     Text("Per-layer resolution; the grid matches. Lower = blockier.")
                         .font(.caption2).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
