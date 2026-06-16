@@ -966,26 +966,40 @@ struct CanvasView: View {
             .coordinateSpace(name: "canvas")
             .overlay(Rectangle().stroke(Color.secondary.opacity(0.4), lineWidth: 1))
             .contentShape(Rectangle())
-            .onTapGesture { pourIfFilling() }
             .gesture(
+                // One gesture for both Pen (draw) and Fill (pour). minimumDistance 0 so a
+                // TAP fires onChanged → a single pixel; a drag paints a trail.
                 DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
                     .onChanged { value in
-                        guard activeIndex != nil else { return }
+                        guard activeTool == .pen, activeIndex != nil else { return }
                         pen.stroke(toNormalized: CGPoint(x: value.location.x / side,
                                                          y: value.location.y / side))
                     }
                     .onEnded { _ in
-                        pen.endStroke()
-                        if let i = activeIndex, let data = pen.currentPNG() {
-                            document.layers[i].setPixels(data)
+                        switch activeTool {
+                        case .pen:
+                            pen.endStroke()
+                            if let i = activeIndex, let data = pen.currentPNG() {
+                                document.layers[i].setPixels(data)
+                            }
+                        case .fill:
+                            pourIfFilling()
+                        default:
+                            break
                         }
                     },
-                including: activeTool == .pen ? .all : .subviews
+                including: (activeTool == .pen || activeTool == .fill) ? .all : .subviews
             )
             .onAppear { if activeTool == .pen { pen.load(activePixelData) } }
             .onChange(of: activeTool) { if activeTool == .pen { pen.load(activePixelData) } }
             .onChange(of: activeLayerID) { if activeTool == .pen { pen.load(activePixelData) } }
-            .onChange(of: pen.resolution) { if activeTool == .pen { pen.load(nil) } }
+            .onChange(of: pen.resolution) {
+                guard activeTool == .pen else { return }
+                pen.changeResolution()   // resample, don't erase
+                if let i = activeIndex, let data = pen.currentPNG() {
+                    document.layers[i].setPixels(data)
+                }
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity) // center in the area
         }
     }
@@ -1491,6 +1505,19 @@ final class PixelPen: ObservableObject {
     }
 
     func endStroke() { lastPoint = nil }
+
+    /// Resample the current art into the (already-updated) resolution instead of
+    /// clearing it — so changing the grid size KEEPS the pixels (nearest-neighbor,
+    /// stays blocky) rather than erasing.
+    func changeResolution() {
+        let old = ctx?.makeImage()
+        let c = makeContext(resolution)
+        c?.interpolationQuality = .none
+        if let old { c?.draw(old, in: CGRect(x: 0, y: 0, width: resolution, height: resolution)) }
+        ctx = c
+        lastPoint = nil
+        image = ctx?.makeImage()
+    }
 
     func currentPNG() -> Data? {
         guard let cg = ctx?.makeImage() else { return nil }
