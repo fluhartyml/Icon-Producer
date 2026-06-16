@@ -696,6 +696,12 @@ struct PenInspector: View {
     private struct EditSlot: Identifiable { let id: Int }
     @State private var editing: EditSlot?
 
+    /// Standalone palette file Save/Load (brand-asset palettes — loadable into any icon).
+    @State private var savingPalette = false
+    @State private var loadingPalette = false
+    @State private var paletteDoc: PaletteFileDocument?
+    @State private var paletteLoadFailed = false
+
     private var activeIsContent: Bool {
         guard let id = activeLayerID,
               let i = document.layers.firstIndex(where: { $0.id == id }) else { return false }
@@ -741,6 +747,29 @@ struct PenInspector: View {
                 Text("Tap to use · right-click (long-press) to change. Saved with the file; new docs inherit it.")
                     .font(.caption2).foregroundStyle(.secondary)
 
+                HStack(spacing: 8) {
+                    Button {
+                        paletteDoc = PaletteFileDocument(
+                            palette: PaletteFile(name: document.name, colors: document.palette))
+                        savingPalette = true
+                    } label: {
+                        Label("Save Palette…", systemImage: "square.and.arrow.down")
+                    }
+                    Button {
+                        paletteLoadFailed = false
+                        loadingPalette = true
+                    } label: {
+                        Label("Load Palette…", systemImage: "folder")
+                    }
+                }
+                .font(.caption)
+                .buttonStyle(.bordered)
+                Text("Save these 8 colors as a reusable brand palette, or load one into this icon.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                if paletteLoadFailed {
+                    Text("Couldn't read that palette file.").font(.caption2).foregroundStyle(.red)
+                }
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text("This layer's resolution — \(pen.resolution)\(pen.resolution == 2 ? " (control)" : "") px")
                         .font(.subheadline)
@@ -767,9 +796,41 @@ struct PenInspector: View {
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .fileExporter(isPresented: $savingPalette, document: paletteDoc,
+                          contentType: .iconPalette, defaultFilename: paletteFilename) { _ in }
+            .fileImporter(isPresented: $loadingPalette, allowedContentTypes: [.iconPalette]) { result in
+                paletteLoadFailed = false
+                guard case .success(let url) = result else { return }
+                loadPalette(url)
+            }
         } else {
             PanelPlaceholder(systemImage: "pencil.tip", title: "Pen (Pixels)",
                              subtitle: "Select the Icon layer (a content layer) to draw")
+        }
+    }
+
+    /// Default name for a saved palette — the icon's name plus "Palette".
+    private var paletteFilename: String {
+        let base = document.name.trimmingCharacters(in: .whitespaces)
+        return (base.isEmpty ? "Untitled Icon" : base) + " Palette"
+    }
+
+    /// Read a `.iconpalette` file, normalize it to 8 valid slots, and adopt it into the
+    /// document + last-used store (so new docs inherit it too). Sets the current pen
+    /// color to the selected slot's new value. Fail-safe: a bad file leaves the palette
+    /// untouched and surfaces an inline note.
+    private func loadPalette(_ url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url),
+              let file = try? JSONDecoder().decode(PaletteFile.self, from: data) else {
+            paletteLoadFailed = true
+            return
+        }
+        document.palette = file.normalizedColors
+        IconDocument.lastUsedPalette = document.palette
+        if document.palette.indices.contains(pen.selectedSlot) {
+            pen.color = Color(hex: document.palette[pen.selectedSlot]) ?? pen.color
         }
     }
 }

@@ -268,6 +268,68 @@ extension UTType {
     /// user saves to iCloud Drive / Files. Holds a `manifest.json` (layers +, later,
     /// edit history) alongside binary assets. Declared in Info.plist to match.
     static let iconProject = UTType(exportedAs: "com.nightgard.Icon-Producer.project")
+
+    /// A standalone brand palette (`.iconpalette`) — plain JSON, saved/loaded
+    /// independent of any project so one color set can seed many icons. Declared in
+    /// Info.plist as an exported type (identity only; the app opens it via its own
+    /// in-app importer, NOT the DocumentGroup, so it is not a CFBundleDocumentTypes entry).
+    static let iconPalette = UTType(exportedAs: "com.nightgard.Icon-Producer.palette")
+}
+
+// MARK: - Standalone palette file (roadmap: brand-asset palettes)
+
+/// A portable 8-color brand palette saved on its own, outside any project. The same
+/// file can be loaded into any icon so a brand's colors stay consistent across icons.
+struct PaletteFile: Codable {
+    var schemaVersion = 1
+    /// The originating document's name when saved — metadata only (loading a palette
+    /// changes colors, never the icon's name).
+    var name: String
+    var colors: [String]
+
+    /// Exactly 8 valid `#RRGGBB` slots. Pads a short file with the crayon-box defaults,
+    /// drops extras past 8, and replaces any malformed hex — so a hand-edited or
+    /// foreign file can never corrupt the document's fixed 8-slot palette.
+    var normalizedColors: [String] {
+        let defaults = IconDocument.defaultPalette
+        return (0..<8).map { i in
+            if i < colors.count, let hex = PaletteFile.normalizeHex(colors[i]) { return hex }
+            return defaults[i]
+        }
+    }
+
+    /// Validate + canonicalize one hex string to "#RRGGBB" (uppercase). nil if malformed.
+    /// Pure string work — no platform color round-trip, so it's actor-free.
+    static func normalizeHex(_ string: String) -> String? {
+        var t = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.hasPrefix("#") { t.removeFirst() }
+        guard t.count == 6, UInt32(t, radix: 16) != nil else { return nil }
+        return "#" + t.uppercased()
+    }
+}
+
+/// SwiftUI `fileExporter` wrapper for a `PaletteFile` — pretty-printed JSON so the
+/// saved brand asset is human-readable and hand-editable.
+struct PaletteFileDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.iconPalette] }
+    static var writableContentTypes: [UTType] { [.iconPalette] }
+
+    var palette: PaletteFile
+
+    init(palette: PaletteFile) { self.palette = palette }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        palette = try JSONDecoder().decode(PaletteFile.self, from: data)
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return FileWrapper(regularFileWithContents: try encoder.encode(palette))
+    }
 }
 
 /// The serializable shape written into a saved package's `manifest.json`.
