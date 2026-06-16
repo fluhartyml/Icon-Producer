@@ -785,6 +785,10 @@ struct PenInspector: View {
 
     var body: some View {
         if activeIsContent {
+            // ScrollView so the lower controls (grid toggle, brush size) stay reachable
+            // when the inspector is height-cramped on iPhone. On iPad's tall column it
+            // simply doesn't scroll — the content fits — so this is safe for both.
+            ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Colors").font(.subheadline)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
@@ -865,10 +869,10 @@ struct PenInspector: View {
 
                 Text("Drag on the canvas to drop pixels into the grid cells.")
                     .font(.caption).foregroundStyle(.secondary)
-                Spacer()
             }
             .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
             .fileExporter(isPresented: $savingPalette, document: paletteDoc,
                           contentType: .iconPalette, defaultFilename: paletteFilename) { _ in }
             .fileImporter(isPresented: $loadingPalette, allowedContentTypes: [.iconPalette]) { result in
