@@ -45,6 +45,9 @@ struct ContentView: View {
     /// Share (roadmap 2.5): a flat 1024 PNG of the visible layers, snapshot at tap.
     @State private var shareURL: URL?
     @State private var showShare = false
+    /// About / wordmark sheet — shows the "Praelum / Graphic Arts" brand inside the app
+    /// (the home-screen + App Store name can't carry the subheading).
+    @State private var showAbout = false
     /// Shared pixel-pen state — the canvas draws into it; the Pen inspector configures it.
     @StateObject private var pen = PixelPen()
 
@@ -100,11 +103,18 @@ struct ContentView: View {
                 }
                 .help("Share a flat PNG of the visible layers")
             }
+            ToolbarItem(placement: .secondaryAction) {
+                Button { showAbout = true } label: {
+                    Label("About Praelum", systemImage: "info.circle")
+                }
+                .help("About Praelum — Graphic Arts")
+            }
         }
         .fileExporter(isPresented: $showExporter,
                       document: exportBundle,
                       contentType: .folder,
                       defaultFilename: exportFilename) { _ in }
+        .sheet(isPresented: $showAbout) { AboutView() }
         .sheet(isPresented: $showShare) {
             if let url = shareURL {
                 #if canImport(UIKit)
@@ -1800,6 +1810,44 @@ struct AutosaveModifier: ViewModifier {
 extension View {
     func autosave(document: IconDocument, fileURL: URL?, isEditable: Bool) -> some View {
         modifier(AutosaveModifier(document: document, fileURL: fileURL, isEditable: isEditable))
+    }
+}
+
+// MARK: - About / in-app wordmark
+
+/// The brand wordmark shown inside the open app: "Praelum" with the "Graphic Arts"
+/// subheading the home-screen / App Store name can't display. Reached from the
+/// toolbar's info button. Serif name = the classical/Latin register of "praelum."
+struct AboutView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private var versionLine: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = info?["CFBundleVersion"] as? String ?? "1"
+        return "Version \(short) (\(build))"
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Spacer()
+            Text("Praelum")
+                .font(.system(size: 48, weight: .semibold, design: .serif))
+            Text("GRAPHIC ARTS")
+                .font(.subheadline)
+                .tracking(4)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(versionLine)
+                .font(.footnote)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(40)
+        .overlay(alignment: .topTrailing) {
+            Button("Done") { dismiss() }
+                .padding()
+        }
     }
 }
 
