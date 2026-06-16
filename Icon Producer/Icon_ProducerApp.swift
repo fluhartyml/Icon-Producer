@@ -14,6 +14,12 @@ struct Icon_ProducerApp: App {
         // in iCloud Drive / Files. New documents open with three blank layers.
         DocumentGroup(newDocument: { IconDocument.newDefault() }) { configuration in
             ContentView(document: configuration.document)
+                // Self-driven autosave — the app has no UndoManager (undo/redo is the
+                // future History system's job), so SwiftUI's undo-based autosave never
+                // fires. This writes the package directly as edits settle.
+                .autosave(document: configuration.document,
+                          fileURL: configuration.fileURL,
+                          isEditable: configuration.isEditable)
         }
     }
 }

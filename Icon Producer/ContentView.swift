@@ -1760,6 +1760,49 @@ struct ActivityView: UIViewControllerRepresentable {
 }
 #endif
 
+// MARK: - Autosave (self-driven, no UndoManager)
+
+/// Debounced autosave for the document editor. Watches the model for ANY change and
+/// writes the package ~1.5s after edits settle, plus a flush when the app leaves the
+/// foreground. Deliberately independent of SwiftUI's undo-based autosave: this app has no
+/// UndoManager (undo/redo belongs to the future History system, and we don't want them to
+/// compete), so without this the document is never marked dirty and edits are lost on close.
+struct AutosaveModifier: ViewModifier {
+    @ObservedObject var document: IconDocument
+    let fileURL: URL?
+    let isEditable: Bool
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var debounce: Task<Void, Never>?
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(document.objectWillChange) { _ in schedule() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase != .active { debounce?.cancel(); save() }   // flush on background
+            }
+    }
+
+    /// Coalesce a burst of edits into a single write 1.5s after the last change.
+    private func schedule() {
+        debounce?.cancel()
+        debounce = Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            if !Task.isCancelled { save() }
+        }
+    }
+
+    private func save() {
+        guard isEditable, let url = fileURL else { return }   // skip new/untitled or read-only
+        try? document.writePackage(to: url)                   // fail-safe: never crash on a bad write
+    }
+}
+
+extension View {
+    func autosave(document: IconDocument, fileURL: URL?, isEditable: Bool) -> some View {
+        modifier(AutosaveModifier(document: document, fileURL: fileURL, isEditable: isEditable))
+    }
+}
+
 #Preview {
     ContentView(document: .newDefault())
 }

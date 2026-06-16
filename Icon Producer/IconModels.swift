@@ -370,3 +370,31 @@ extension IconDocument: ReferenceFileDocument {
         return FileWrapper(directoryWithFileWrappers: ["manifest.json": manifest])
     }
 }
+
+// MARK: - Self-driven autosave
+
+extension IconDocument {
+    /// Write the `.iconproj` package straight to `url`, file-coordinated for iCloud
+    /// safety. This is the app's autosave path — it does NOT go through SwiftUI's
+    /// undo-based autosave (the app has no UndoManager; undo/redo is the future History
+    /// system's job, and we don't want the two to compete). Same `manifest.json` format
+    /// as the official `fileWrapper(snapshot:)` writer, so the file stays interchangeable.
+    func writePackage(to url: URL) throws {
+        let manifest = IconProjectManifest(name: name, canvasSize: canvasSize,
+                                           layers: layers, palette: palette)
+        let data = try JSONEncoder().encode(manifest)
+        let mf = FileWrapper(regularFileWithContents: data)
+        mf.preferredFilename = "manifest.json"
+        let dir = FileWrapper(directoryWithFileWrappers: ["manifest.json": mf])
+
+        var coordError: NSError?
+        var writeError: Error?
+        NSFileCoordinator().coordinate(writingItemAt: url, options: .forReplacing,
+                                       error: &coordError) { coordURL in
+            do { try dir.write(to: coordURL, options: .atomic, originalContentsURL: nil) }
+            catch { writeError = error }
+        }
+        if let writeError { throw writeError }
+        if let coordError { throw coordError }
+    }
+}
