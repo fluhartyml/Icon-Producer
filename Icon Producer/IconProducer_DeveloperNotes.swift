@@ -314,6 +314,11 @@
 //        general print-design tool, not only an app-icon maker. Worth a product-
 //        positioning decision later (icon maker that ALSO prints, vs. broaden the
 //        app's identity). Recorded as Michael's vision; do not trim.
+//        REBRAND (Michael 2026-06-16): if these features land, the name likely
+//        changes — "Icon Producer" is narrow (says "icons"), but a print/canvas/PDF
+//        tool is broader, so "Icon Producer" becomes a MODE, not the product. Fits
+//        Michael's standing naming rule: prefer an umbrella noun with room to grow
+//        over a narrow-specific name. Decide the new name alongside the print build.
 //      • STATUS / HINT BAR (Michael 2026-06-11): a text bar BELOW THE CANVAS (both
 //        orientations) = the app's single VOICE to the user. PRIMARY PURPOSE: it
 //        solves the NO-HOVER problem on touch — desktop rollover/hover hints have
