@@ -747,19 +747,21 @@ struct PenInspector: View {
                 Text("Tap to use · right-click (long-press) to change. Saved with the file; new docs inherit it.")
                     .font(.caption2).foregroundStyle(.secondary)
 
-                HStack(spacing: 8) {
+                VStack(spacing: 6) {
                     Button {
                         paletteDoc = PaletteFileDocument(
                             palette: PaletteFile(name: document.name, colors: document.palette))
                         savingPalette = true
                     } label: {
                         Label("Save Palette…", systemImage: "plus.rectangle.on.folder")
+                            .frame(maxWidth: .infinity)
                     }
                     Button {
                         paletteLoadFailed = false
                         loadingPalette = true
                     } label: {
                         Label("Load Palette…", systemImage: "paintpalette")
+                            .frame(maxWidth: .infinity)
                     }
                 }
                 .font(.caption2)
