@@ -704,6 +704,7 @@ struct PenInspector: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("This layer's resolution").font(.subheadline)
                     Picker("Resolution", selection: $pen.resolution) {
+                        Text("2").tag(2)
                         Text("128").tag(128); Text("256").tag(256)
                         Text("512").tag(512); Text("1024").tag(1024)
                     }
@@ -716,8 +717,9 @@ struct PenInspector: View {
                 Toggle("Show grid", isOn: $pen.showGrid)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Brush  \(Int(pen.brush)) px").font(.subheadline)
-                    Slider(value: $pen.brush, in: 1...16, step: 1)
+                    Text("Brush  \(pen.brush) cell\(pen.brush == 1 ? "" : "s")").font(.subheadline)
+                    Slider(value: Binding(get: { Double(pen.brush) },
+                                          set: { pen.brush = Int($0) }), in: 1...8, step: 1)
                 }
 
                 Text("Drag on the canvas to drop pixels into the grid cells.")
@@ -950,7 +952,7 @@ struct CanvasView: View {
                 }
                 // Pixel grid overlay for the active layer's resolution.
                 if activeTool == .pen, pen.showGrid {
-                    PixelGrid(resolution: 2)   // TEMP: verify the grid renders as 2×2 blocks
+                    PixelGrid(resolution: pen.resolution)
                         .frame(width: side, height: side)
                         .allowsHitTesting(false)
                 }
@@ -1430,8 +1432,8 @@ final class PixelPen: ObservableObject {
     /// The active pixel layer's resolution — per-layer (128/256/512/1024…). The pen's
     /// bitmap IS this many pixels square; nearest-neighbor upscaling keeps it blocky.
     @Published var resolution: Int = 128
-    /// Brush width in resolution-pixels.
-    @Published var brush: CGFloat = 1
+    /// Brush size in CELLS (1 = one pixel/cell, 2 = a 2×2 block, …) — same unit as the grid.
+    @Published var brush: Int = 1
     @Published var showGrid = true
     @Published private(set) var image: CGImage?
 
@@ -1465,23 +1467,24 @@ final class PixelPen: ObservableObject {
         image = ctx?.makeImage()
     }
 
-    /// Paint at a normalized canvas point (0…1, top-left). Converts into the layer's
-    /// own resolution space; CG is bottom-left so flip y.
+    /// Fill the grid cell(s) under a normalized canvas point (0…1, top-left) — whole
+    /// pixels at the layer's resolution; a brush of N fills an N×N cell block. Snapped
+    /// to the grid, so the brush and grid share the same unit. CG is bottom-left → flip y.
     func stroke(toNormalized n: CGPoint) {
         if ctx == nil { ctx = makeContext(resolution) }
         guard let ctx else { return }
-        let dim = CGFloat(resolution)
-        let p = CGPoint(x: n.x * dim, y: dim - n.y * dim)
-        let cg = color.platformCGColor
-        ctx.setStrokeColor(cg)
-        ctx.setFillColor(cg)
-        ctx.setLineWidth(brush)
-        if let last = lastPoint {
-            ctx.beginPath(); ctx.move(to: last); ctx.addLine(to: p); ctx.strokePath()
-        } else {
-            ctx.fillEllipse(in: CGRect(x: p.x - brush / 2, y: p.y - brush / 2, width: brush, height: brush))
+        let dim = resolution
+        let col = min(max(Int(n.x * CGFloat(dim)), 0), dim - 1)
+        let row = min(max(Int(n.y * CGFloat(dim)), 0), dim - 1)
+        let half = brush / 2
+        ctx.setFillColor(color.platformCGColor)
+        for dc in -half..<(brush - half) {
+            for dr in -half..<(brush - half) {
+                let c = col + dc, r = row + dr
+                guard c >= 0, c < dim, r >= 0, r < dim else { continue }
+                ctx.fill(CGRect(x: c, y: dim - 1 - r, width: 1, height: 1))   // one cell = one pixel
+            }
         }
-        lastPoint = p
         image = ctx.makeImage()
     }
 
