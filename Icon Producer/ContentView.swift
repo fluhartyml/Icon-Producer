@@ -67,15 +67,19 @@ struct ContentView: View {
     private func phoneLayout(geo: GeometryProxy) -> some View {
         if geo.size.height > geo.size.width {
             VStack(spacing: 0) {
+                // Canvas ~42% (was half): the inspector was starved for height. No
+                // ActiveToolLabel here — the tool strip highlights the active tool and
+                // the inspector names it, so a third label was redundant. Panel is
+                // `compact` (no pills, swipe + dots) and takes the freed room.
                 canvasArea
-                    .frame(height: geo.size.height / 2)
+                    .frame(height: geo.size.height * 0.42)
                 Divider()
                 ToolStrip(activeTool: $activeTool, lines: 1)
-                ActiveToolLabel(tool: activeTool)
                 Divider()
                 BottomPanel.PanelView(document: document, activeTool: activeTool,
                                       activeLayerID: $activeLayerID, selection: $bottomPanel,
-                                      fillColor: $fillColor)
+                                      fillColor: $fillColor, compact: true)
+                    .frame(maxHeight: .infinity)
             }
         } else {
             HStack(spacing: 0) {
@@ -84,11 +88,10 @@ struct ContentView: View {
                 Divider()
                 VStack(spacing: 0) {
                     ToolStrip(activeTool: $activeTool, lines: 1)
-                    ActiveToolLabel(tool: activeTool)
                     Divider()
                     BottomPanel.PanelView(document: document, activeTool: activeTool,
                                           activeLayerID: $activeLayerID, selection: $bottomPanel,
-                                          fillColor: $fillColor)
+                                          fillColor: $fillColor, compact: true)
                 }
                 .frame(width: 300)
             }
@@ -930,15 +933,21 @@ enum BottomPanel: String, CaseIterable, Identifiable {
         @Binding var activeLayerID: IconLayer.ID?
         @Binding var selection: BottomPanel
         @Binding var fillColor: Color
+        /// iPhone passes true: hide the segmented pills and rely on swipe + page dots,
+        /// reclaiming vertical room for the cramped inspector. iPad/Mac keep the pills
+        /// (default false), so their layout is unchanged.
+        var compact: Bool = false
 
         var body: some View {
             VStack(spacing: 0) {
-                Picker("", selection: $selection) {
-                    ForEach(BottomPanel.allCases) { Text($0.rawValue).tag($0) }
+                if !compact {
+                    Picker("", selection: $selection) {
+                        ForEach(BottomPanel.allCases) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .padding(8)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .padding(8)
 
                 #if os(iOS)
                 TabView(selection: $selection) {
@@ -946,7 +955,7 @@ enum BottomPanel: String, CaseIterable, Identifiable {
                     layersPage.tag(BottomPanel.layers)
                     historyPage.tag(BottomPanel.history)
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
+                .tabViewStyle(.page(indexDisplayMode: compact ? .always : .never))
                 #else
                 // macOS has no page style; portrait branch is unused on Mac, but
                 // it still must compile — switch on the selection.
@@ -970,7 +979,9 @@ enum BottomPanel: String, CaseIterable, Identifiable {
         }
 
         private var layersPage: some View {
-            LayerPanel(document: document, showsHeader: false, activeLayerID: $activeLayerID)
+            // Compact (iPhone, no pills): show the "Layers" header so the swiped-to page
+            // is labeled. With pills (iPad portrait) the pills already label it.
+            LayerPanel(document: document, showsHeader: compact, activeLayerID: $activeLayerID)
         }
 
         private var historyPage: some View {
