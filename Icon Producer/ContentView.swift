@@ -753,16 +753,16 @@ struct PenInspector: View {
                             palette: PaletteFile(name: document.name, colors: document.palette))
                         savingPalette = true
                     } label: {
-                        Label("Save Palette…", systemImage: "square.and.arrow.down")
+                        Label("Save Palette…", systemImage: "plus.rectangle.on.folder")
                     }
                     Button {
                         paletteLoadFailed = false
                         loadingPalette = true
                     } label: {
-                        Label("Load Palette…", systemImage: "folder")
+                        Label("Load Palette…", systemImage: "paintpalette")
                     }
                 }
-                .font(.caption)
+                .font(.caption2)
                 .buttonStyle(.bordered)
                 Text("Save these 8 colors as a reusable brand palette, or load one into this icon.")
                     .font(.caption2).foregroundStyle(.secondary)
