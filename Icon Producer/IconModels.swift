@@ -39,11 +39,26 @@ final class IconDocument: ObservableObject {
     let canvasSize: Int
     /// Bottom-to-top draw order.
     @Published var layers: [IconLayer]
+    /// The 8-slot brand palette (hex), saved WITH the document so it travels per-project.
+    @Published var palette: [String]
 
-    init(name: String = "Untitled Icon", canvasSize: Int = 1024, layers: [IconLayer] = []) {
+    /// Crayon-box defaults — used for a new doc, or one saved before palettes existed.
+    static let defaultPalette = ["#000000", "#FFFFFF", "#FF3B30", "#FF9500",
+                                 "#FFCC00", "#34C759", "#007AFF", "#AF52DE"]
+
+    /// The last palette the user worked with — persists app-wide so a NEW document (or
+    /// one saved without a palette) inherits it instead of resetting to the defaults.
+    static var lastUsedPalette: [String] {
+        get { UserDefaults.standard.stringArray(forKey: "IconProducer.lastUsedPalette") ?? defaultPalette }
+        set { UserDefaults.standard.set(newValue, forKey: "IconProducer.lastUsedPalette") }
+    }
+
+    init(name: String = "Untitled Icon", canvasSize: Int = 1024, layers: [IconLayer] = [],
+         palette: [String] = IconDocument.lastUsedPalette) {
         self.name = name
         self.canvasSize = canvasSize
         self.layers = layers
+        self.palette = palette
     }
 
     /// A brand-new icon's default stack: Light Background, Dark Background, Icon —
@@ -262,6 +277,8 @@ struct IconProjectManifest: Codable {
     var name: String
     var canvasSize: Int
     var layers: [IconLayer]
+    /// Optional for backward-compat with .iconproj files saved before palettes existed.
+    var palette: [String]?
 }
 
 extension IconDocument: ReferenceFileDocument {
@@ -273,12 +290,13 @@ extension IconDocument: ReferenceFileDocument {
             throw CocoaError(.fileReadCorruptFile)
         }
         let manifest = try JSONDecoder().decode(IconProjectManifest.self, from: data)
-        self.init(name: manifest.name, canvasSize: manifest.canvasSize, layers: manifest.layers)
+        self.init(name: manifest.name, canvasSize: manifest.canvasSize, layers: manifest.layers,
+                  palette: manifest.palette ?? IconDocument.lastUsedPalette)
     }
 
     /// Capture current state for writing (called off the main actor by SwiftUI).
     func snapshot(contentType: UTType) throws -> IconProjectManifest {
-        IconProjectManifest(name: name, canvasSize: canvasSize, layers: layers)
+        IconProjectManifest(name: name, canvasSize: canvasSize, layers: layers, palette: palette)
     }
 
     /// Write the package: a directory wrapper holding `manifest.json`.

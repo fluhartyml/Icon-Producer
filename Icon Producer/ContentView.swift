@@ -692,6 +692,10 @@ struct PenInspector: View {
     /// Resolution rungs for the graduated slider — 2 is the control.
     private let resolutionRungs = [2, 4, 6, 8, 16, 32, 64, 128, 256, 512, 1024]
 
+    /// Which palette slot is open for recoloring (popover).
+    private struct EditSlot: Identifiable { let id: Int }
+    @State private var editing: EditSlot?
+
     private var activeIsContent: Bool {
         guard let id = activeLayerID,
               let i = document.layers.firstIndex(where: { $0.id == id }) else { return false }
@@ -699,10 +703,43 @@ struct PenInspector: View {
         return false
     }
 
+    /// Bridge a palette slot (hex in the document) to a Color binding for the picker.
+    /// Recoloring writes back to the document, updates the active color if it's the
+    /// selected slot, and persists the palette as "last used" so new docs inherit it.
+    private func slotColorBinding(_ i: Int) -> Binding<Color> {
+        Binding(get: { Color(hex: document.palette[i]) ?? .black },
+                set: { c in
+                    document.palette[i] = c.hexString() ?? "#000000"
+                    if i == pen.selectedSlot { pen.color = c }
+                    IconDocument.lastUsedPalette = document.palette
+                })
+    }
+
     var body: some View {
         if activeIsContent {
             VStack(alignment: .leading, spacing: 14) {
-                ColorPicker("Color", selection: $pen.color, supportsOpacity: true)
+                Text("Colors").font(.subheadline)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
+                    ForEach(document.palette.indices, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color(hex: document.palette[i]) ?? .black)
+                            .frame(height: 26)
+                            .overlay(RoundedRectangle(cornerRadius: 6)
+                                .stroke(i == pen.selectedSlot ? Color.accentColor : Color.gray.opacity(0.4),
+                                        lineWidth: i == pen.selectedSlot ? 2.5 : 1))
+                            .onTapGesture {
+                                pen.selectedSlot = i
+                                pen.color = Color(hex: document.palette[i]) ?? .black
+                            }
+                            .contextMenu { Button("Change color…") { editing = EditSlot(id: i) } }
+                    }
+                }
+                .popover(item: $editing) { slot in
+                    ColorPicker("Slot color", selection: slotColorBinding(slot.id), supportsOpacity: false)
+                        .padding().frame(minWidth: 220)
+                }
+                Text("Tap to use · right-click (long-press) to change. Saved with the file; new docs inherit it.")
+                    .font(.caption2).foregroundStyle(.secondary)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("This layer's resolution — \(pen.resolution)\(pen.resolution == 2 ? " (control)" : "") px")
@@ -1444,7 +1481,10 @@ extension Color {
 /// seeded from the layer's existing pixels so drawing accumulates rather than wipes.
 @MainActor
 final class PixelPen: ObservableObject {
+    /// The active paint color (the chosen palette slot). The palette itself lives in the
+    /// document (saved per-project); the pen just holds the current color + which slot.
     @Published var color: Color = .black
+    @Published var selectedSlot = 0
     /// The active pixel layer's resolution — per-layer (128/256/512/1024…). The pen's
     /// bitmap IS this many pixels square; nearest-neighbor upscaling keeps it blocky.
     @Published var resolution: Int = 128
