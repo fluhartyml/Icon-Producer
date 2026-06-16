@@ -319,19 +319,30 @@
 //        tool is broader, so "Icon Producer" becomes a MODE, not the product. Fits
 //        Michael's standing naming rule: prefer an umbrella noun with room to grow
 //        over a narrow-specific name. Decide the new name alongside the print build.
-//        CHOSEN FRONT-RUNNER (Michael 2026-06-16): **STAMPA — Graphic Arts.**
-//          - "Stampa" = Italian for "print / the press," and contains "stamp" (a small
-//            mark you press) — so it marries the ICON side (a stamp/mark) and the PRESS
-//            side (printing) in one spellable word.
-//          - Survived a long naming gauntlet where every other candidate was taken or
-//            flawed: Pixel Press / Imprint / Imprintshop / Seal Press / Pixel Shop /
-//            Pixel Seal / Prelum (sounds "preliminary") / Vellum (taken — Mac book app) /
-//            Calque (unspellable) / Signum (taken). Stampa came back clean + spellable.
-//          - "Graphic Arts" descriptor is deliberate: historically it spans BOTH graphic
-//            design AND printmaking, covering the icon side and the print side.
-//          - For Michael's English-only / Americas-only market, "Stampa" reads as an
-//            arbitrary, distinctive word (a trademark STRENGTH) — but note La Stampa
-//            (Italian newspaper) + generic Italian use exist (different field/region).
+//        CHOSEN NAME (Michael 2026-06-16): **PRAELUM — Graphic Arts.**
+//          - "Praelum" (variant of Latin *prelum*) = the PRESS — originally the Roman
+//            olive/wine beam-press, reused in Neo-Latin for the printing press
+//            (*prelum typographicum*). Classical, premium, distinctive.
+//          - The "ae" spelling is deliberate: pushes pronunciation toward classical
+//            "PRY-lum," dodging the "preliminary/prelim" echo that knocked out the plain
+//            "Prelum" spelling.
+//          - Availability: a "Praelum" web screen surfaced NO app / software / company /
+//            trademark — looks clear (the rare "ae" spelling also dodges the Kaplan
+//            "Prelum" education platform). Preliminary, not legal clearance.
+//          - KNOWN TRADEOFF: the "ae" hurts spelling/discoverability (people may type
+//            prelum / praleum / praylum) — milder than "Calque" but real. Lean on the
+//            pronunciation and the "Graphic Arts" descriptor in marketing.
+//          - RUNNER-UP / BACKUP: **STAMPA** (Italian "print/press," contains "stamp";
+//            Germanic root, cognate with English "stamp"; easier to spell, also came back
+//            clean). Use as fallback if Praelum's spelling proves a problem in practice.
+//          - Gauntlet rejects (all taken or flawed): Pixel Press / Imprint / Imprintshop /
+//            Seal Press / Pixel Shop / Pixel Seal / Prelum (prelim echo) / Vellum (taken,
+//            Mac book app) / Calque (unspellable) / Signum (taken).
+//          - "Graphic Arts" descriptor: historically spans BOTH graphic design AND
+//            printmaking — covers the icon side and the print side.
+//          - For Michael's English-only / Americas-only market, both names read as
+//            arbitrary/distinctive (a trademark STRENGTH); rights are territorial, so
+//            US/Americas marks govern (EU/Italian "stampa" uses are outside his region).
 //          - ⚠️ STILL NEEDS A FORMAL USPTO/TESS SEARCH (or trademark attorney) BEFORE
 //            FILING — the web screen here is preliminary, not legal clearance.
 //      • STATUS / HINT BAR (Michael 2026-06-11): a text bar BELOW THE CANVAS (both
