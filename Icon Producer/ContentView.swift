@@ -689,6 +689,9 @@ struct PenInspector: View {
     @ObservedObject var document: IconDocument
     let activeLayerID: IconLayer.ID?
 
+    /// Resolution rungs for the graduated slider — 2 is the control.
+    private let resolutionRungs = [2, 4, 6, 8, 16, 32, 64, 128, 256, 512, 1024]
+
     private var activeIsContent: Bool {
         guard let id = activeLayerID,
               let i = document.layers.firstIndex(where: { $0.id == id }) else { return false }
@@ -702,14 +705,12 @@ struct PenInspector: View {
                 ColorPicker("Color", selection: $pen.color, supportsOpacity: true)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("This layer's resolution").font(.subheadline)
-                    Picker("Resolution", selection: $pen.resolution) {
-                        Text("2 (control)").tag(2)
-                        Text("16").tag(16); Text("32").tag(32); Text("64").tag(64)
-                        Text("128").tag(128); Text("256").tag(256)
-                        Text("512").tag(512); Text("1024").tag(1024)
-                    }
-                    .pickerStyle(.menu)
+                    Text("This layer's resolution — \(pen.resolution)\(pen.resolution == 2 ? " (control)" : "") px")
+                        .font(.subheadline)
+                    Slider(value: Binding(
+                        get: { Double(resolutionRungs.firstIndex(of: pen.resolution) ?? 4) },
+                        set: { pen.resolution = resolutionRungs[min(max(Int($0.rounded()), 0), resolutionRungs.count - 1)] }
+                    ), in: 0...Double(resolutionRungs.count - 1), step: 1)
                     Text("Per-layer resolution; the grid matches. Lower = blockier.")
                         .font(.caption2).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
