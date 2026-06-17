@@ -45,7 +45,7 @@ struct ContentView: View {
     /// Share (roadmap 2.5): a flat 1024 PNG of the visible layers, snapshot at tap.
     @State private var shareURL: URL?
     @State private var showShare = false
-    /// About / wordmark sheet — shows the "Pictorial Studio / Graphic Arts" brand inside the app
+    /// About / wordmark sheet — shows the "Pictorial Producer / Graphic Arts" brand inside the app
     /// (the home-screen + App Store name can't carry the subheading).
     @State private var showAbout = false
     /// Shared pixel-pen state — the canvas draws into it; the Pen inspector configures it.
@@ -154,9 +154,9 @@ struct ContentView: View {
             }
             ToolbarItem(placement: .secondaryAction) {
                 Button { showAbout = true } label: {
-                    Label("About Pictorial Studio", systemImage: "info.circle")
+                    Label("About Pictorial Producer", systemImage: "info.circle")
                 }
-                .help("About Pictorial Studio — Graphic Arts")
+                .help("About Pictorial Producer — Graphic Arts")
             }
         }
         .fileExporter(isPresented: $showExporter,
@@ -1882,7 +1882,7 @@ extension View {
 
 // MARK: - About / in-app wordmark
 
-/// The brand wordmark shown inside the open app: "Pictorial Studio" with the "Graphic Arts"
+/// The brand wordmark shown inside the open app: "Pictorial Producer" with the "Graphic Arts"
 /// subheading the home-screen / App Store name can't display. Reached from the
 /// toolbar's info button.
 struct AboutView: View {
@@ -1898,7 +1898,7 @@ struct AboutView: View {
     var body: some View {
         VStack(spacing: 10) {
             Spacer()
-            Text("Pictorial Studio")
+            Text("Pictorial Producer")
                 .font(.system(size: 40, weight: .semibold, design: .serif))
                 .multilineTextAlignment(.center)
             Text("GRAPHIC ARTS")

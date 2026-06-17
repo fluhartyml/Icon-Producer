@@ -319,33 +319,32 @@
 //        tool is broader, so "Icon Producer" becomes a MODE, not the product. Fits
 //        Michael's standing naming rule: prefer an umbrella noun with room to grow
 //        over a narrow-specific name. Decide the new name alongside the print build.
-//        CHOSEN NAME (Michael 2026-06-17): **PICTORIAL STUDIO.**
-//          - Lineage: Icon Producer -> Praelum -> Pictorial Studio. PRAELUM RETIRED
-//            (too abstract / Latin, needs explaining — worked against discoverability);
-//            its old backup STAMPA retired with it.
+//        CHOSEN NAME (Michael 2026-06-17): **PICTORIAL PRODUCER.**
+//          - Lineage: Icon Producer -> Praelum -> Pictorial Studio -> Pictorial Producer.
+//            PRAELUM RETIRED (too abstract / Latin). "Pictorial Studio" was briefly locked,
+//            then dropped because "Studio" BREAKS Michael's naming voice (see "Producer").
 //          - "Pictorial" = the one word a long elimination session landed on that Michael
 //            found genuinely PLEASANT (real, smooth, familiar; says "picture" without being
-//            literal-blunt or foreign). "Studio" chosen over "Lab" (Lab reads photo-
-//            darkroom/science; Studio fits Graphics & Design).
-//          - PRIORITY: CLARITY OVER OWNABILITY. Michael explicitly de-prioritized owning/
-//            defending the name, so the search optimized for a clear, familiar, pleasant
-//            name — NOT a distinctive/protectable one.
-//          - Availability (checked 2026-06-17: App Store iTunes API + web + trademark):
-//              * Exact app name "Pictorial Studio" is FREE — the only HARD gate (App Store
-//                Connect blocks identical app names). That is what makes it shippable.
-//              * KNOWINGLY ACCEPTED crowding / TM cousins: "Pictogram Studio, Inc."
-//                (graphic-design TM since 1996), "Pictorial - AI Infographics" app, the
-//                broader Picto- design-studio thicket. Fine BECAUSE ownability was de-
-//                prioritized. This is NOT a clean/defensible mark — accepted on purpose.
+//            literal-blunt or foreign).
+//          - "Producer" = Michael's established MAKER-SUFFIX / house naming voice:
+//            [output] + agentive role-noun -- Icon Producer, Typeface Producer (cf. Contact/
+//            Transcription Keeper, Cryo Playlist Manager, CryoTunes Player, NightGard Library
+//            Commander). So "Pictorial Producer" reads self-evidently as "makes pictures/
+//            graphics" AND extends the Icon Producer -> Typeface Producer suite. "Studio" was
+//            off-voice; "Producer" is on-voice. Method: Workshop/Naming-Brainstorm-Method-2026-06-17.md
+//          - PRIORITY: CLARITY OVER OWNABILITY. Michael de-prioritized owning/defending the
+//            name -- optimize for clear/familiar/pleasant, not a distinctive/protectable mark.
+//          - Availability (checked 2026-06-17, App Store iTunes API): exact name
+//            "Pictorial Producer" is FREE -- the only HARD gate (ASC blocks identical names).
 //          - Bundle ID stays com.nightgard.Icon-Producer (wired to the iCloud container +
-//            .iconproj docs); the rename is display-name only — do NOT touch the bundle ID.
+//            .iconproj docs); the rename is display-name only -- do NOT touch the bundle ID.
 //          - "Graphic Arts" descriptor kept (spans graphic design AND printmaking; covers
 //            the icon side and the future print side).
-//          - Gauntlet history (rejected this + prior sessions): Praelum/Stampa (Latin, too
-//            abstract), Inkstone (loved the feel, collides w/ Inkstone Software), Pictographic
-//            Studio (Picto- thicket + Pictogram Studio TM), Glyph (reads as font), Tessera
-//            (sci-fi "tesseract" halo), plus Pixel Press / Imprint / Seal Press / Vellum /
-//            Calque / Signum (all taken or flawed).
+//          - Gauntlet rejects: Praelum/Stampa (Latin/abstract), Inkstone (loved it, collides
+//            w/ Inkstone Software), Pictographic Studio (Picto- thicket + Pictogram Studio TM),
+//            Markwright/Tilesmith (maker-coinage, no evident connection), Pictorial Studio
+//            (off-voice "Studio"), Glyph (reads as font), Tessera (sci-fi "tesseract" halo),
+//            plus Pixel Press / Imprint / Seal Press / Vellum / Calque / Signum.
 //      • STATUS / HINT BAR (Michael 2026-06-11): a text bar BELOW THE CANVAS (both
 //        orientations) = the app's single VOICE to the user. PRIMARY PURPOSE: it
 //        solves the NO-HOVER problem on touch — desktop rollover/hover hints have
