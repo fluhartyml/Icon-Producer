@@ -319,32 +319,33 @@
 //        tool is broader, so "Icon Producer" becomes a MODE, not the product. Fits
 //        Michael's standing naming rule: prefer an umbrella noun with room to grow
 //        over a narrow-specific name. Decide the new name alongside the print build.
-//        CHOSEN NAME (Michael 2026-06-16): **PRAELUM — Graphic Arts.**
-//          - "Praelum" (variant of Latin *prelum*) = the PRESS — originally the Roman
-//            olive/wine beam-press, reused in Neo-Latin for the printing press
-//            (*prelum typographicum*). Classical, premium, distinctive.
-//          - The "ae" spelling is deliberate: pushes pronunciation toward classical
-//            "PRY-lum," dodging the "preliminary/prelim" echo that knocked out the plain
-//            "Prelum" spelling.
-//          - Availability: a "Praelum" web screen surfaced NO app / software / company /
-//            trademark — looks clear (the rare "ae" spelling also dodges the Kaplan
-//            "Prelum" education platform). Preliminary, not legal clearance.
-//          - KNOWN TRADEOFF: the "ae" hurts spelling/discoverability (people may type
-//            prelum / praleum / praylum) — milder than "Calque" but real. Lean on the
-//            pronunciation and the "Graphic Arts" descriptor in marketing.
-//          - RUNNER-UP / BACKUP: **STAMPA** (Italian "print/press," contains "stamp";
-//            Germanic root, cognate with English "stamp"; easier to spell, also came back
-//            clean). Use as fallback if Praelum's spelling proves a problem in practice.
-//          - Gauntlet rejects (all taken or flawed): Pixel Press / Imprint / Imprintshop /
-//            Seal Press / Pixel Shop / Pixel Seal / Prelum (prelim echo) / Vellum (taken,
-//            Mac book app) / Calque (unspellable) / Signum (taken).
-//          - "Graphic Arts" descriptor: historically spans BOTH graphic design AND
-//            printmaking — covers the icon side and the print side.
-//          - For Michael's English-only / Americas-only market, both names read as
-//            arbitrary/distinctive (a trademark STRENGTH); rights are territorial, so
-//            US/Americas marks govern (EU/Italian "stampa" uses are outside his region).
-//          - ⚠️ STILL NEEDS A FORMAL USPTO/TESS SEARCH (or trademark attorney) BEFORE
-//            FILING — the web screen here is preliminary, not legal clearance.
+//        CHOSEN NAME (Michael 2026-06-17): **PICTORIAL STUDIO.**
+//          - Lineage: Icon Producer -> Praelum -> Pictorial Studio. PRAELUM RETIRED
+//            (too abstract / Latin, needs explaining — worked against discoverability);
+//            its old backup STAMPA retired with it.
+//          - "Pictorial" = the one word a long elimination session landed on that Michael
+//            found genuinely PLEASANT (real, smooth, familiar; says "picture" without being
+//            literal-blunt or foreign). "Studio" chosen over "Lab" (Lab reads photo-
+//            darkroom/science; Studio fits Graphics & Design).
+//          - PRIORITY: CLARITY OVER OWNABILITY. Michael explicitly de-prioritized owning/
+//            defending the name, so the search optimized for a clear, familiar, pleasant
+//            name — NOT a distinctive/protectable one.
+//          - Availability (checked 2026-06-17: App Store iTunes API + web + trademark):
+//              * Exact app name "Pictorial Studio" is FREE — the only HARD gate (App Store
+//                Connect blocks identical app names). That is what makes it shippable.
+//              * KNOWINGLY ACCEPTED crowding / TM cousins: "Pictogram Studio, Inc."
+//                (graphic-design TM since 1996), "Pictorial - AI Infographics" app, the
+//                broader Picto- design-studio thicket. Fine BECAUSE ownability was de-
+//                prioritized. This is NOT a clean/defensible mark — accepted on purpose.
+//          - Bundle ID stays com.nightgard.Icon-Producer (wired to the iCloud container +
+//            .iconproj docs); the rename is display-name only — do NOT touch the bundle ID.
+//          - "Graphic Arts" descriptor kept (spans graphic design AND printmaking; covers
+//            the icon side and the future print side).
+//          - Gauntlet history (rejected this + prior sessions): Praelum/Stampa (Latin, too
+//            abstract), Inkstone (loved the feel, collides w/ Inkstone Software), Pictographic
+//            Studio (Picto- thicket + Pictogram Studio TM), Glyph (reads as font), Tessera
+//            (sci-fi "tesseract" halo), plus Pixel Press / Imprint / Seal Press / Vellum /
+//            Calque / Signum (all taken or flawed).
 //      • STATUS / HINT BAR (Michael 2026-06-11): a text bar BELOW THE CANVAS (both
 //        orientations) = the app's single VOICE to the user. PRIMARY PURPOSE: it
 //        solves the NO-HOVER problem on touch — desktop rollover/hover hints have

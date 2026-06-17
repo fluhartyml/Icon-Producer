@@ -24,18 +24,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		C0AB8D1D2FD877D2007F7D61 /* Praelum.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Praelum.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C0AB8D2E2FD877D3007F7D61 /* PraelumTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PraelumTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C0AB8D382FD877D3007F7D61 /* PraelumUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PraelumUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0AB8D1D2FD877D2007F7D61 /* Pictorial Studio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Pictorial Studio.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0AB8D2E2FD877D3007F7D61 /* Pictorial StudioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Pictorial StudioTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0AB8D382FD877D3007F7D61 /* Pictorial StudioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Pictorial StudioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		C0AB8D402FD877D3007F7D61 /* Exceptions for "Icon Producer" folder in "Praelum" target */ = {
+		C0AB8D402FD877D3007F7D61 /* Exceptions for "Icon Producer" folder in "Pictorial Studio" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = C0AB8D1C2FD877D2007F7D61 /* Praelum */;
+			target = C0AB8D1C2FD877D2007F7D61 /* Pictorial Studio */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -43,7 +43,7 @@
 		C0AB8D1F2FD877D2007F7D61 /* Icon Producer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				C0AB8D402FD877D3007F7D61 /* Exceptions for "Icon Producer" folder in "Praelum" target */,
+				C0AB8D402FD877D3007F7D61 /* Exceptions for "Icon Producer" folder in "Pictorial Studio" target */,
 			);
 			path = "Icon Producer";
 			sourceTree = "<group>";
@@ -98,9 +98,9 @@
 		C0AB8D1E2FD877D2007F7D61 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C0AB8D1D2FD877D2007F7D61 /* Praelum.app */,
-				C0AB8D2E2FD877D3007F7D61 /* PraelumTests.xctest */,
-				C0AB8D382FD877D3007F7D61 /* PraelumUITests.xctest */,
+				C0AB8D1D2FD877D2007F7D61 /* Pictorial Studio.app */,
+				C0AB8D2E2FD877D3007F7D61 /* Pictorial StudioTests.xctest */,
+				C0AB8D382FD877D3007F7D61 /* Pictorial StudioUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,9 +108,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		C0AB8D1C2FD877D2007F7D61 /* Praelum */ = {
+		C0AB8D1C2FD877D2007F7D61 /* Pictorial Studio */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C0AB8D412FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "Praelum" */;
+			buildConfigurationList = C0AB8D412FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "Pictorial Studio" */;
 			buildPhases = (
 				C0AB8D192FD877D2007F7D61 /* Sources */,
 				C0AB8D1A2FD877D2007F7D61 /* Frameworks */,
@@ -123,16 +123,16 @@
 			fileSystemSynchronizedGroups = (
 				C0AB8D1F2FD877D2007F7D61 /* Icon Producer */,
 			);
-			name = Praelum;
+			name = "Pictorial Studio";
 			packageProductDependencies = (
 			);
 			productName = "Icon Producer";
-			productReference = C0AB8D1D2FD877D2007F7D61 /* Praelum.app */;
+			productReference = C0AB8D1D2FD877D2007F7D61 /* Pictorial Studio.app */;
 			productType = "com.apple.product-type.application";
 		};
-		C0AB8D2D2FD877D3007F7D61 /* PraelumTests */ = {
+		C0AB8D2D2FD877D3007F7D61 /* Pictorial StudioTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C0AB8D462FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "PraelumTests" */;
+			buildConfigurationList = C0AB8D462FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "Pictorial StudioTests" */;
 			buildPhases = (
 				C0AB8D2A2FD877D3007F7D61 /* Sources */,
 				C0AB8D2B2FD877D3007F7D61 /* Frameworks */,
@@ -146,16 +146,16 @@
 			fileSystemSynchronizedGroups = (
 				C0AB8D312FD877D3007F7D61 /* Icon ProducerTests */,
 			);
-			name = PraelumTests;
+			name = "Pictorial StudioTests";
 			packageProductDependencies = (
 			);
 			productName = "Icon ProducerTests";
-			productReference = C0AB8D2E2FD877D3007F7D61 /* PraelumTests.xctest */;
+			productReference = C0AB8D2E2FD877D3007F7D61 /* Pictorial StudioTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		C0AB8D372FD877D3007F7D61 /* PraelumUITests */ = {
+		C0AB8D372FD877D3007F7D61 /* Pictorial StudioUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C0AB8D492FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "PraelumUITests" */;
+			buildConfigurationList = C0AB8D492FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "Pictorial StudioUITests" */;
 			buildPhases = (
 				C0AB8D342FD877D3007F7D61 /* Sources */,
 				C0AB8D352FD877D3007F7D61 /* Frameworks */,
@@ -169,11 +169,11 @@
 			fileSystemSynchronizedGroups = (
 				C0AB8D3B2FD877D3007F7D61 /* Icon ProducerUITests */,
 			);
-			name = PraelumUITests;
+			name = "Pictorial StudioUITests";
 			packageProductDependencies = (
 			);
 			productName = "Icon ProducerUITests";
-			productReference = C0AB8D382FD877D3007F7D61 /* PraelumUITests.xctest */;
+			productReference = C0AB8D382FD877D3007F7D61 /* Pictorial StudioUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -199,7 +199,7 @@
 					};
 				};
 			};
-			buildConfigurationList = C0AB8D182FD877D2007F7D61 /* Build configuration list for PBXProject "Praelum" */;
+			buildConfigurationList = C0AB8D182FD877D2007F7D61 /* Build configuration list for PBXProject "Pictorial Studio" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -213,9 +213,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				C0AB8D1C2FD877D2007F7D61 /* Praelum */,
-				C0AB8D2D2FD877D3007F7D61 /* PraelumTests */,
-				C0AB8D372FD877D3007F7D61 /* PraelumUITests */,
+				C0AB8D1C2FD877D2007F7D61 /* Pictorial Studio */,
+				C0AB8D2D2FD877D3007F7D61 /* Pictorial StudioTests */,
+				C0AB8D372FD877D3007F7D61 /* Pictorial StudioUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -271,12 +271,12 @@
 /* Begin PBXTargetDependency section */
 		C0AB8D302FD877D3007F7D61 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = C0AB8D1C2FD877D2007F7D61 /* Praelum */;
+			target = C0AB8D1C2FD877D2007F7D61 /* Pictorial Studio */;
 			targetProxy = C0AB8D2F2FD877D3007F7D61 /* PBXContainerItemProxy */;
 		};
 		C0AB8D3A2FD877D3007F7D61 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = C0AB8D1C2FD877D2007F7D61 /* Praelum */;
+			target = C0AB8D1C2FD877D2007F7D61 /* Pictorial Studio */;
 			targetProxy = C0AB8D392FD877D3007F7D61 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -531,7 +531,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Praelum.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Praelum";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pictorial Studio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pictorial Studio";
 				XROS_DEPLOYMENT_TARGET = 26.4;
 			};
 			name = Debug;
@@ -557,7 +557,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Praelum.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Praelum";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pictorial Studio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pictorial Studio";
 				XROS_DEPLOYMENT_TARGET = 26.4;
 			};
 			name = Release;
@@ -615,7 +615,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		C0AB8D182FD877D2007F7D61 /* Build configuration list for PBXProject "Praelum" */ = {
+		C0AB8D182FD877D2007F7D61 /* Build configuration list for PBXProject "Pictorial Studio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0AB8D442FD877D3007F7D61 /* Debug */,
@@ -624,7 +624,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C0AB8D412FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "Praelum" */ = {
+		C0AB8D412FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "Pictorial Studio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0AB8D422FD877D3007F7D61 /* Debug */,
@@ -633,7 +633,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C0AB8D462FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "PraelumTests" */ = {
+		C0AB8D462FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "Pictorial StudioTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0AB8D472FD877D3007F7D61 /* Debug */,
@@ -642,7 +642,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C0AB8D492FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "PraelumUITests" */ = {
+		C0AB8D492FD877D3007F7D61 /* Build configuration list for PBXNativeTarget "Pictorial StudioUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0AB8D4A2FD877D3007F7D61 /* Debug */,
