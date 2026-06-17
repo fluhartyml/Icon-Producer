@@ -1090,6 +1090,50 @@ struct MoveTransformInspector: View {
 /// The square artboard. Composites the visible layers bottom-to-top over a
 /// transparency checkerboard. (Blank layers render nothing -> checkerboard shows.)
 /// When Move is active and a layer is selected, draws a draggable transform box.
+#if os(macOS)
+/// macOS-only: captures right-mouse (secondary) clicks/drags on the canvas and reports the
+/// normalized point (0…1, top-left origin) so right-click ERASES a pixel without flipping the
+/// Draw/Erase mode. Left-clicks pass through to the SwiftUI draw gesture underneath.
+struct RightClickEraser: NSViewRepresentable {
+    var onErase: (CGPoint) -> Void
+    var onEnded: () -> Void
+
+    func makeNSView(context: Context) -> RightClickView {
+        let v = RightClickView(); v.onErase = onErase; v.onEnded = onEnded; return v
+    }
+    func updateNSView(_ v: RightClickView, context: Context) {
+        v.onErase = onErase; v.onEnded = onEnded
+    }
+
+    final class RightClickView: NSView {
+        var onErase: ((CGPoint) -> Void)?
+        var onEnded: (() -> Void)?
+
+        private func report(_ event: NSEvent) {
+            guard bounds.width > 0, bounds.height > 0 else { return }
+            let p = convert(event.locationInWindow, from: nil)
+            let nx = max(0, min(1, p.x / bounds.width))
+            let ny = max(0, min(1, 1 - p.y / bounds.height))   // AppKit bottom-left → top-left
+            onErase?(CGPoint(x: nx, y: ny))
+        }
+        override func rightMouseDown(with event: NSEvent) { report(event) }
+        override func rightMouseDragged(with event: NSEvent) { report(event) }
+        override func rightMouseUp(with event: NSEvent) { onEnded?() }
+
+        /// Claim ONLY right-mouse events; return nil otherwise so the SwiftUI left-drag
+        /// gesture beneath still receives normal clicks.
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            switch NSApp.currentEvent?.type {
+            case .rightMouseDown, .rightMouseDragged, .rightMouseUp:
+                return super.hitTest(point)
+            default:
+                return nil
+            }
+        }
+    }
+}
+#endif
+
 struct CanvasView: View {
     @ObservedObject var document: IconDocument
     @Binding var activeLayerID: IconLayer.ID?
@@ -1151,6 +1195,23 @@ struct CanvasView: View {
             .frame(width: side, height: side)
             .coordinateSpace(name: "canvas")
             .overlay(Rectangle().stroke(Color.secondary.opacity(0.4), lineWidth: 1))
+            .overlay {
+                // macOS: right-click erases a pixel without flipping the Draw/Erase mode;
+                // left-clicks fall through to the SwiftUI draw gesture below.
+                #if os(macOS)
+                if activeTool == .pen, activeIndex != nil {
+                    RightClickEraser(
+                        onErase: { n in pen.erase(toNormalized: n) },
+                        onEnded: {
+                            pen.endStroke()
+                            if let i = activeIndex, let data = pen.currentPNG() {
+                                document.layers[i].setPixels(data)
+                            }
+                        }
+                    )
+                }
+                #endif
+            }
             .contentShape(Rectangle())
             .gesture(
                 // One gesture for both Pen (draw) and Fill (pour). minimumDistance 0 so a
@@ -1158,8 +1219,8 @@ struct CanvasView: View {
                 DragGesture(minimumDistance: 0, coordinateSpace: .named("canvas"))
                     .onChanged { value in
                         guard activeTool == .pen, activeIndex != nil else { return }
-                        pen.stroke(toNormalized: CGPoint(x: value.location.x / side,
-                                                         y: value.location.y / side))
+                        let n = CGPoint(x: value.location.x / side, y: value.location.y / side)
+                        if pen.erasing { pen.erase(toNormalized: n) } else { pen.stroke(toNormalized: n) }
                     }
                     .onEnded { _ in
                         switch activeTool {
@@ -1643,6 +1704,9 @@ final class PixelPen: ObservableObject {
     @Published var resolution: Int = 128
     /// Brush size in CELLS (1 = one pixel/cell, 2 = a 2×2 block, …) — same unit as the grid.
     @Published var brush: Int = 1
+    /// Draw vs Erase mode — driven by the on-screen Draw/Erase toggle (all platforms).
+    /// Mac right-click erases momentarily without flipping this.
+    @Published var erasing = false
     @Published var showGrid = true
     @Published private(set) var image: CGImage?
 
@@ -1679,19 +1743,27 @@ final class PixelPen: ObservableObject {
     /// Fill the grid cell(s) under a normalized canvas point (0…1, top-left) — whole
     /// pixels at the layer's resolution; a brush of N fills an N×N cell block. Snapped
     /// to the grid, so the brush and grid share the same unit. CG is bottom-left → flip y.
-    func stroke(toNormalized n: CGPoint) {
+    func stroke(toNormalized n: CGPoint) { paint(n, erase: false) }
+
+    /// Erase the grid cell(s) under a normalized point — the counterpart of `stroke`,
+    /// clearing each cell back to transparent. Driven by the Draw/Erase toggle (all
+    /// platforms) and by Mac right-click.
+    func erase(toNormalized n: CGPoint) { paint(n, erase: true) }
+
+    private func paint(_ n: CGPoint, erase: Bool) {
         if ctx == nil { ctx = makeContext(resolution) }
         guard let ctx else { return }
         let dim = resolution
         let col = min(max(Int(n.x * CGFloat(dim)), 0), dim - 1)
         let row = min(max(Int(n.y * CGFloat(dim)), 0), dim - 1)
         let half = brush / 2
-        ctx.setFillColor(color.platformCGColor)
+        if !erase { ctx.setFillColor(color.platformCGColor) }
         for dc in -half..<(brush - half) {
             for dr in -half..<(brush - half) {
                 let c = col + dc, r = row + dr
                 guard c >= 0, c < dim, r >= 0, r < dim else { continue }
-                ctx.fill(CGRect(x: c, y: dim - 1 - r, width: 1, height: 1))   // one cell = one pixel
+                let cell = CGRect(x: c, y: dim - 1 - r, width: 1, height: 1)   // one cell = one pixel
+                if erase { ctx.clear(cell) } else { ctx.fill(cell) }
             }
         }
         image = ctx.makeImage()
