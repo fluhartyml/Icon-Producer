@@ -63,7 +63,7 @@ final class IconDocument: ObservableObject {
 
     /// A brand-new icon's default stack: Light Background, Dark Background, Icon —
     /// ALL THREE START BLANK (roadmap 0.4: no example icon, no test content). The
-    /// user fills the backgrounds with the paint bucket and adds content to "Icon".
+    /// user fills the backgrounds with the paint bucket and adds content to "Canvas".
     /// More layers added as needed (infinite). Light vs dark is previewed by
     /// toggling a background's `isVisible` (the eyeball); there are no light/dark
     /// mode buttons.
@@ -71,7 +71,7 @@ final class IconDocument: ObservableObject {
         IconDocument(layers: [
             IconLayer(name: "Light Background", role: .background(.light, fillHex: nil)),
             IconLayer(name: "Dark Background",  role: .background(.dark,  fillHex: nil)),
-            IconLayer(name: "Icon", role: .content),
+            IconLayer(name: "Canvas", role: .content),
         ])
     }
 }
@@ -374,7 +374,8 @@ extension IconDocument: ReferenceFileDocument {
 // MARK: - Self-driven autosave
 
 extension IconDocument {
-    /// Write the `.iconproj` package straight to `url`, file-coordinated for iCloud
+    /// Write the `.picprod` package straight to `url` (older `.iconproj` files still
+    /// open — same type identifier), file-coordinated for iCloud
     /// safety. This is the app's autosave path — it does NOT go through SwiftUI's
     /// undo-based autosave (the app has no UndoManager; undo/redo is the future History
     /// system's job, and we don't want the two to compete). Same `manifest.json` format
