@@ -29,6 +29,7 @@ enum Tool: String, CaseIterable, Identifiable {
     case glyph         // browse a font's full repertoire (Wingdings etc.)
     case symbol        // SF Symbols
     case image         // import: File / Photo / paste / AI
+    case imagePlayground   // Apple Image Playground — Maker (new layer) / Filter (restyle active layer)
     case zoom          // navigation only (not history)
 
     var id: String { rawValue }
@@ -47,6 +48,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .glyph:      "Font"
         case .symbol:     "Symbol (SF Symbols)"
         case .image:      "Image"
+        case .imagePlayground: "Image Playground"
         case .zoom:       "Zoom"
         }
     }
@@ -65,6 +67,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .glyph:      "character.book.closed"
         case .symbol:     "star.fill"
         case .image:      "photo"
+        case .imagePlayground: "apple.image.playground"
         case .zoom:       "magnifyingglass"
         }
     }
@@ -140,10 +143,11 @@ struct ToolGlyph: View {
     let tool: Tool
 
     /// Asset-catalog image name for this tool, or nil to use the SF Symbol.
-    /// `.glyph` (the font-repertoire / Wingdings browser) has no custom render yet,
-    /// so it keeps its symbol. PhotoTool art is imported but reserved for the Image
-    /// tool's "Photo" import sub-option, so the strip glyph for `.image` is
-    /// ImagePlayground (the playground pun).
+    /// Two tools keep their SF Symbol for now: `.glyph` (font-repertoire / Wingdings
+    /// browser) and `.image` (its strip glyph stays the `photo` symbol). Two pieces
+    /// of imported art are parked for upcoming work: PhotoTool for the Image tool's
+    /// photo-import picker, and ImagePlayground for the future standalone Image
+    /// Playground tool — so neither is wired to a strip glyph yet.
     private var assetName: String? {
         switch tool {
         case .move:       "MoveTool"
@@ -155,9 +159,10 @@ struct ToolGlyph: View {
         case .path:       "PathTool"
         case .text:       "FontBook"
         case .symbol:     "SFPickerTool"
-        case .image:      "ImagePlayground"
         case .zoom:       "MagnefyingGlass"
+        case .imagePlayground: "ImagePlayground"
         case .glyph:      nil
+        case .image:      nil
         }
     }
 
