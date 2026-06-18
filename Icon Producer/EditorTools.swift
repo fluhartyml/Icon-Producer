@@ -132,18 +132,37 @@ struct PaintBucketGlyph: View {
     }
 }
 
-/// The glyph shown for a tool in the strip/rail: the custom paint bucket for Fill,
-/// otherwise the tool's SF Symbol. Keeps the SF-Symbol look for every other tool.
+/// The glyph shown for a tool in the strip/rail. Every tool with custom art in
+/// Assets (Michael's 96×96 @300dpi tool renders, imported 2026-06-18) uses that
+/// image; a tool without one falls back to its SF Symbol. Custom art renders a
+/// touch larger (28pt) than the 18pt SF Symbols so the detail stays legible.
 struct ToolGlyph: View {
     let tool: Tool
 
+    /// Asset-catalog image name for this tool, or nil to use the SF Symbol.
+    /// `.text` has no custom render yet, so it keeps its symbol. PhotoTool art is
+    /// imported but reserved for the Image tool's "Photo" import sub-option, so
+    /// the strip glyph for `.image` is ImagePlayground (the playground pun).
+    private var assetName: String? {
+        switch tool {
+        case .move:       "MoveTool"
+        case .fill:       "BucketTool"
+        case .pen:        "PixelArtPenTool"
+        case .eraser:     "PinkEraser"
+        case .eyedropper: "ColorSampleEyeDropper"
+        case .shape:      "ShapeTool"
+        case .path:       "PathTool"
+        case .glyph:      "FontBook"
+        case .symbol:     "SFPickerTool"
+        case .image:      "ImagePlayground"
+        case .zoom:       "MagnefyingGlass"
+        case .text:       nil
+        }
+    }
+
     var body: some View {
-        if tool == .fill {
-            // Michael's tilted pouring-bucket render (2026-06-18), cut out to
-            // transparent in Assets ("PaintBucket"). Replaces the old vector
-            // PaintBucketGlyph (kept in this file but unused). A touch larger
-            // than the 24pt SF Symbols so the photoreal detail reads.
-            Image("PaintBucket")
+        if let assetName {
+            Image(assetName)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 28, height: 28)
