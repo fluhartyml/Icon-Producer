@@ -450,7 +450,7 @@ struct ToolInspector: View {
                                  fillColor: $fillColor)
         case .symbol:
             SymbolPickerInspector(document: document, activeLayerID: activeLayerID)
-        case .glyph:
+        case .text:
             FontPickerInspector(document: document, activeLayerID: activeLayerID)
         case .image:
             ImageImportInspector(document: document, activeLayerID: activeLayerID)

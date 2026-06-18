@@ -25,8 +25,7 @@ enum Tool: String, CaseIterable, Identifiable {
     case eyedropper
     case shape         // line / rectangle / oval / polygon
     case path          // vector Bezier
-    case text          // type characters
-    case glyph         // browse a font's full repertoire (Wingdings etc.)
+    case text          // type characters + browse a font's full repertoire (Wingdings etc.)
     case symbol        // SF Symbols
     case image         // import: File / Photo / paste / AI
     case imagePlayground   // Apple Image Playground — Maker (new layer) / Filter (restyle active layer)
@@ -45,7 +44,6 @@ enum Tool: String, CaseIterable, Identifiable {
         case .shape:      "Shape"
         case .path:       "Path (Vector)"
         case .text:       "Text"
-        case .glyph:      "Font"
         case .symbol:     "Symbol (SF Symbols)"
         case .image:      "Image"
         case .imagePlayground: "Image Playground"
@@ -64,7 +62,6 @@ enum Tool: String, CaseIterable, Identifiable {
         case .shape:      "square.on.circle"
         case .path:       "scribble.variable"
         case .text:       "textformat"
-        case .glyph:      "character.book.closed"
         case .symbol:     "star.fill"
         case .image:      "photo"
         case .imagePlayground: "apple.image.playground"
@@ -143,11 +140,9 @@ struct ToolGlyph: View {
     let tool: Tool
 
     /// Asset-catalog image name for this tool, or nil to use the SF Symbol.
-    /// Two tools keep their SF Symbol for now: `.glyph` (font-repertoire / Wingdings
-    /// browser) and `.image` (its strip glyph stays the `photo` symbol). Two pieces
-    /// of imported art are parked for upcoming work: PhotoTool for the Image tool's
-    /// photo-import picker, and ImagePlayground for the future standalone Image
-    /// Playground tool — so neither is wired to a strip glyph yet.
+    /// Every tool now has custom art (the Font tool was folded into Text, and the
+    /// Image tool uses the PhotoTool render). The Optional/SF-Symbol fallback stays
+    /// in place for any future tool added without art.
     private var assetName: String? {
         switch tool {
         case .move:       "MoveTool"
@@ -159,10 +154,9 @@ struct ToolGlyph: View {
         case .path:       "PathTool"
         case .text:       "FontBook"
         case .symbol:     "SFPickerTool"
-        case .zoom:       "MagnefyingGlass"
+        case .image:      "PhotoTool"
         case .imagePlayground: "ImagePlayground"
-        case .glyph:      nil
-        case .image:      nil
+        case .zoom:       "MagnefyingGlass"
         }
     }
 
