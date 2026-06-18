@@ -140,9 +140,10 @@ struct ToolGlyph: View {
     let tool: Tool
 
     /// Asset-catalog image name for this tool, or nil to use the SF Symbol.
-    /// `.text` has no custom render yet, so it keeps its symbol. PhotoTool art is
-    /// imported but reserved for the Image tool's "Photo" import sub-option, so
-    /// the strip glyph for `.image` is ImagePlayground (the playground pun).
+    /// `.glyph` (the font-repertoire / Wingdings browser) has no custom render yet,
+    /// so it keeps its symbol. PhotoTool art is imported but reserved for the Image
+    /// tool's "Photo" import sub-option, so the strip glyph for `.image` is
+    /// ImagePlayground (the playground pun).
     private var assetName: String? {
         switch tool {
         case .move:       "MoveTool"
@@ -152,11 +153,11 @@ struct ToolGlyph: View {
         case .eyedropper: "ColorSampleEyeDropper"
         case .shape:      "ShapeTool"
         case .path:       "PathTool"
-        case .glyph:      "FontBook"
+        case .text:       "FontBook"
         case .symbol:     "SFPickerTool"
         case .image:      "ImagePlayground"
         case .zoom:       "MagnefyingGlass"
-        case .text:       nil
+        case .glyph:      nil
         }
     }
 
