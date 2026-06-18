@@ -50,6 +50,24 @@ struct ContentView: View {
     @State private var showAbout = false
     /// Shared pixel-pen state — the canvas draws into it; the Pen inspector configures it.
     @StateObject private var pen = PixelPen()
+    /// Canvas zoom (×1…×8), driven by the on-canvas +/− buttons. scaleEffect-based
+    /// (NOT a scroll view) so it can't refight the Auto Layout battle that parked
+    /// pinch-zoom on 2026-06-11. Center-anchored; the named "canvas" coordinate
+    /// space is defined INSIDE CanvasView, so pen/move hit-testing stays correct
+    /// under the scale. Pan is a later step.
+    @State private var canvasZoom: CGFloat = 1
+    /// Focus mode: hide the tool strip + panel so the canvas fills the whole editor.
+    @State private var canvasFocused = false
+
+    private let minZoom: CGFloat = 1
+    private let maxZoom: CGFloat = 8
+    private let zoomStep: CGFloat = 1
+
+    private func setZoom(_ z: CGFloat) {
+        withAnimation(.easeOut(duration: 0.15)) {
+            canvasZoom = min(max(z, minZoom), maxZoom)
+        }
+    }
 
     /// True on iPhone (any orientation) — gates the phone-only layout so it never
     /// touches the iPad/Mac views. Size class can't decide this: an iPhone Pro Max in
@@ -100,7 +118,11 @@ struct ContentView: View {
 
     var body: some View {
         GeometryReader { geo in
-            if isPhone {
+            if canvasFocused {
+                // Full-screen focus: canvas only, tools/panel hidden. The on-canvas
+                // control cluster carries the toggle back out + the zoom buttons.
+                canvasArea
+            } else if isPhone {
                 phoneLayout(geo: geo)
             } else if geo.size.height > geo.size.width {
                 // Portrait: canvas top half, then tool strip + swipe panel.
@@ -226,17 +248,61 @@ struct ContentView: View {
     }
 
     private var canvasArea: some View {
-        // Zoom/pan PARKED 2026-06-11 (ZoomableCanvas left in the file, unused):
-        // the UIScrollView approach fought Auto Layout so pinch didn't zoom.
-        // Re-wire when the PIXEL PEN needs zoom and we can iterate it properly.
+        // Zoom REVIVED 2026-06-18 as a scaleEffect driven by the on-canvas +/−
+        // buttons (the ZoomableCanvas/UIScrollView pinch approach stays parked —
+        // it fought Auto Layout). scaleEffect is a render transform: layout size
+        // is unchanged, so it doesn't refight that battle, and the "canvas" named
+        // coordinate space lives inside CanvasView so pen/move math is unaffected.
+        // Pan is the next step (center-anchored for now).
         CanvasView(document: document,
                    activeLayerID: $activeLayerID,
                    showTransformBox: activeTool == .move,
                    activeTool: activeTool,
                    fillColor: fillColor)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .scaleEffect(canvasZoom)
             .padding()
             .background(Color(white: 0.5).opacity(0.12))
+            .clipped()                                   // zoomed canvas stays inside its area
+            .overlay(alignment: .bottomTrailing) { canvasControls }
+    }
+
+    /// Floating control cluster on the canvas: full-screen toggle + zoom +/−.
+    /// Always reachable — including in focus mode, which is the only way back out.
+    private var canvasControls: some View {
+        VStack(spacing: 6) {
+            Button { canvasFocused.toggle() } label: {
+                Image(systemName: canvasFocused
+                      ? "arrow.down.right.and.arrow.up.left"
+                      : "arrow.up.left.and.arrow.down.right")
+            }
+            .help(canvasFocused ? "Exit full screen" : "Full-screen canvas")
+            .accessibilityLabel(canvasFocused ? "Exit full screen" : "Full-screen canvas")
+
+            Divider().frame(width: 26)
+
+            Button { setZoom(canvasZoom + zoomStep) } label: { Image(systemName: "plus") }
+                .help("Zoom in")
+                .accessibilityLabel("Zoom in")
+                .disabled(canvasZoom >= maxZoom)
+            Button { setZoom(1) } label: {
+                Text("\(Int(canvasZoom * 100))%")
+                    .font(.system(size: 11, weight: .semibold).monospacedDigit())
+            }
+            .help("Reset zoom to 100%")
+            .accessibilityLabel("Reset zoom to 100 percent")
+            Button { setZoom(canvasZoom - zoomStep) } label: { Image(systemName: "minus") }
+                .help("Zoom out")
+                .accessibilityLabel("Zoom out")
+                .disabled(canvasZoom <= minZoom)
+        }
+        .font(.system(size: 15, weight: .semibold))
+        .buttonStyle(.plain)
+        .frame(width: 30)
+        .padding(8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.secondary.opacity(0.25)))
+        .padding(12)
     }
 }
 
