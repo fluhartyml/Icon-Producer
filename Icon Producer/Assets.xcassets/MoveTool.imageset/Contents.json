@@ -3,6 +3,16 @@
     {
       "filename" : "MoveTool.png",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "MoveTool-dark.png",
+      "idiom" : "universal"
     }
   ],
   "info" : {

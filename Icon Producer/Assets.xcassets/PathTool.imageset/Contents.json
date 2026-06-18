@@ -3,6 +3,16 @@
     {
       "filename" : "PathTool.png",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "PathTool-dark.png",
+      "idiom" : "universal"
     }
   ],
   "info" : {

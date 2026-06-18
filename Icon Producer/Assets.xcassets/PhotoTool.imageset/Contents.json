@@ -3,6 +3,16 @@
     {
       "filename" : "PhotoTool.png",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "PhotoTool-dark.png",
+      "idiom" : "universal"
     }
   ],
   "info" : {

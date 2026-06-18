@@ -3,6 +3,16 @@
     {
       "filename" : "ShapeTool.png",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "ShapeTool-dark.png",
+      "idiom" : "universal"
     }
   ],
   "info" : {

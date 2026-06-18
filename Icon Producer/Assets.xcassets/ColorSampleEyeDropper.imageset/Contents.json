@@ -3,6 +3,16 @@
     {
       "filename" : "ColorSampleEyeDropper.png",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "ColorSampleEyeDropper-dark.png",
+      "idiom" : "universal"
     }
   ],
   "info" : {

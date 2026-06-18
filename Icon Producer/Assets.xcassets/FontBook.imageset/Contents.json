@@ -3,6 +3,16 @@
     {
       "filename" : "FontBook.png",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "FontBook-dark.png",
+      "idiom" : "universal"
     }
   ],
   "info" : {

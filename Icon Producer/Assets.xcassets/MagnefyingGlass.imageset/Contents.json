@@ -3,6 +3,16 @@
     {
       "filename" : "MagnefyingGlass.png",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "MagnefyingGlass-dark.png",
+      "idiom" : "universal"
     }
   ],
   "info" : {

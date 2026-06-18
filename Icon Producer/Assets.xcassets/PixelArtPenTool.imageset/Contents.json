@@ -3,6 +3,16 @@
     {
       "filename" : "PixelArtPenTool.png",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "PixelArtPenTool-dark.png",
+      "idiom" : "universal"
     }
   ],
   "info" : {
