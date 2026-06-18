@@ -139,7 +139,14 @@ struct ToolGlyph: View {
 
     var body: some View {
         if tool == .fill {
-            PaintBucketGlyph().frame(width: 24, height: 24)
+            // Michael's tilted pouring-bucket render (2026-06-18), cut out to
+            // transparent in Assets ("PaintBucket"). Replaces the old vector
+            // PaintBucketGlyph (kept in this file but unused). A touch larger
+            // than the 24pt SF Symbols so the photoreal detail reads.
+            Image("PaintBucket")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 28, height: 28)
         } else {
             Image(systemName: tool.systemImage)
                 .font(.system(size: 18))
