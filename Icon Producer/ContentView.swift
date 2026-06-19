@@ -1114,6 +1114,7 @@ struct MoveTransformInspector: View {
 
     @State private var cropAspect: CropAspect = .none
     @State private var cropFraction: Double = 0.8
+    @State private var showCropConfirm = false
 
     private var index: Int? {
         guard let id = activeLayerID else { return nil }
@@ -1151,14 +1152,42 @@ struct MoveTransformInspector: View {
             }
             .pickerStyle(.segmented)
             if cropAspect != .none {
+                // Apply (destructive) sits a short space below the aspect choosers.
+                Button(role: .destructive) { showCropConfirm = true } label: {
+                    Label("Apply Crop", systemImage: "crop")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.top, 4)
+                .confirmationDialog("Apply crop?", isPresented: $showCropConfirm, titleVisibility: .visible) {
+                    Button("Apply Crop", role: .destructive) { commitCrop() }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("Permanently flattens all layers and trims the image to the crop. This can't be undone.")
+                }
+
                 Text("Crop size  \(Int(cropFraction * 100))%").font(.caption)
                 Slider(value: $cropFraction, in: 0.1...1.0)
-                Text("Trims the exported/shared image to the highlighted area. Non-destructive — your layers are untouched.")
+                Text("Live preview is non-destructive (Export/Share trim to it). Apply Crop bakes it in.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
         .onChange(of: cropAspect) { applyCrop() }
         .onChange(of: cropFraction) { applyCrop() }
+    }
+
+    /// Destructive commit: render the visible layers cropped to the rect, then REPLACE
+    /// the stack with that single flattened image and clear the crop. No undo (the app
+    /// has no UndoManager — hence the confirmation). Clean for Square; a non-square crop
+    /// bakes a rectangle that the square canvas holds letterboxed until variable-canvas.
+    private func commitCrop() {
+        guard document.cropRect != nil,
+              let png = ContentView.renderIconPNG(document: document, px: document.canvasSize) else { return }
+        var content = IconLayer(name: "Canvas", role: .content)
+        content.setImage(png)
+        document.layers = [content]
+        document.cropRect = nil
+        cropAspect = .none
     }
 
     /// Build a centered crop rect from the chosen aspect + size fraction (the crop's
