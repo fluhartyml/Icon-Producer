@@ -68,17 +68,23 @@ final class IconDocument: ObservableObject {
         self.cropRect = cropRect
     }
 
-    /// A brand-new icon's default stack: Light Background, Dark Background, Icon —
-    /// ALL THREE START BLANK (roadmap 0.4: no example icon, no test content). The
-    /// user fills the backgrounds with the paint bucket and adds content to "Canvas".
-    /// More layers added as needed (infinite). Light vs dark is previewed by
-    /// toggling a background's `isVisible` (the eyeball); there are no light/dark
-    /// mode buttons.
+    /// A brand-new icon's default stack (bottom → top): two background floors —
+    /// Light, Dark — then three blank content layers — Background, Midground,
+    /// Foreground. ALL START BLANK (roadmap 0.4: no example icon, no test content).
+    /// The user fills the floors with the paint bucket and composes art across the
+    /// three content layers (e.g. an imported/AI subject on Midground, a backdrop on
+    /// Background). The named content layers give a depth scaffold AND keep an
+    /// AI-generated icon's baked-in backdrop off the Light/Dark mode floors (no
+    /// "background within a background"). Light vs dark is previewed by toggling a
+    /// floor's `isVisible` (the eyeball); there are no light/dark mode buttons. More
+    /// layers can be added/deleted freely.
     static func newDefault() -> IconDocument {
         IconDocument(layers: [
-            IconLayer(name: "Light Background", role: .background(.light, fillHex: nil)),
-            IconLayer(name: "Dark Background",  role: .background(.dark,  fillHex: nil)),
-            IconLayer(name: "Canvas", role: .content),
+            IconLayer(name: "Light",      role: .background(.light, fillHex: nil)),
+            IconLayer(name: "Dark",       role: .background(.dark,  fillHex: nil)),
+            IconLayer(name: "Background", role: .content),
+            IconLayer(name: "Midground",  role: .content),
+            IconLayer(name: "Foreground", role: .content),
         ])
     }
 }
