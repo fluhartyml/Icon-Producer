@@ -1163,9 +1163,14 @@ struct MoveTransformInspector: View {
               let png = ContentView.renderIconPNG(document: document, px: document.canvasSize) else { return }
         var content = IconLayer(name: "Canvas", role: .content)
         content.setImage(png)
-        document.layers = [content]
-        document.cropRect = nil
-        cropAspect = .none
+        // Defer the stack swap to the next runloop so the confirmation dialog fully
+        // dismisses and any in-flight slider bindings settle BEFORE the layer count
+        // shrinks (belt-and-suspenders with the indices.contains guards).
+        DispatchQueue.main.async {
+            document.layers = [content]
+            document.cropRect = nil
+            cropAspect = .none
+        }
     }
 
     /// Build a centered crop rect from the chosen aspect + size fraction (the crop's
