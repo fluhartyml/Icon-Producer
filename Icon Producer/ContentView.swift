@@ -1141,12 +1141,12 @@ struct MoveTransformInspector: View {
                     Button("Apply Crop", role: .destructive) { commitCrop() }
                     Button("Cancel", role: .cancel) { }
                 } message: {
-                    Text("Permanently flattens all layers and trims the image to the crop. This can't be undone.")
+                    Text("Permanently crops the active layer to the selection. Other layers and the project are left intact. This can't be undone.")
                 }
 
                 Text("Crop size  \(Int(cropFraction * 100))%").font(.caption)
                 Slider(value: $cropFraction, in: 0.1...1.0)
-                Text("Live preview is non-destructive (Export/Share trim to it). Apply Crop bakes it in.")
+                Text("Live preview is non-destructive (Export/Share trim to it). Apply Crop bakes it into the active layer.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
@@ -1154,20 +1154,39 @@ struct MoveTransformInspector: View {
         .onChange(of: cropFraction) { applyCrop() }
     }
 
-    /// Destructive commit: render the visible layers cropped to the rect, then REPLACE
-    /// the stack with that single flattened image and clear the crop. No undo (the app
-    /// has no UndoManager — hence the confirmation). Clean for Square; a non-square crop
-    /// bakes a rectangle that the square canvas holds letterboxed until variable-canvas.
+    /// Destructive commit (v1.1): crop ONLY the active layer to the crop rect, keeping
+    /// every other layer and the project's layer structure intact (NO flatten). The
+    /// active layer's content is baked into a full-canvas PNG that is transparent
+    /// outside the crop region, then stored with an identity transform so it renders
+    /// exactly where it sat. Other layers + the document are left alone. Share/Export
+    /// still flattens a throwaway copy, so the project is never destroyed. No undo
+    /// (no UndoManager — hence the confirmation).
+    /// Cropping MULTIPLE selected layers at once = v1.2 (needs multi-layer selection).
     private func commitCrop() {
-        guard document.cropRect != nil,
-              let png = ContentView.renderIconPNG(document: document, px: document.canvasSize) else { return }
-        var content = IconLayer(name: "Canvas", role: .content)
-        content.setImage(png)
-        // Defer the stack swap to the next runloop so the confirmation dialog fully
-        // dismisses and any in-flight slider bindings settle BEFORE the layer count
-        // shrinks (belt-and-suspenders with the indices.contains guards).
+        guard let crop = document.cropRect, let idx = index,
+              document.layers.indices.contains(idx),
+              case .content = document.layers[idx].role else {
+            // No active content layer (e.g. a background is active): nothing to bake,
+            // just clear the crop so the overlay goes away.
+            DispatchQueue.main.async { document.cropRect = nil; cropAspect = .none }
+            return
+        }
+        let side = CGFloat(document.canvasSize)
+        let layerID = document.layers[idx].id
+        // Render JUST the active layer (with its current transform) masked to the crop
+        // rect, into a full-canvas PNG that is transparent outside the kept region.
+        let solo = IconDocument(name: document.name, canvasSize: document.canvasSize,
+                                layers: [document.layers[idx]], palette: document.palette,
+                                cropRect: nil)
+        let renderer = ImageRenderer(content: CroppedLayerRender(document: solo, side: side, crop: crop))
+        renderer.scale = 1
+        guard let cg = renderer.cgImage, let png = pngData(from: cg) else { return }
+        // Defer the mutation so the confirmation dialog fully dismisses and any in-flight
+        // slider bindings settle before the layer's content changes.
         DispatchQueue.main.async {
-            document.layers = [content]
+            guard let i = document.layers.firstIndex(where: { $0.id == layerID }) else { return }
+            document.layers[i].setImage(png)
+            document.layers[i].transform = LayerTransform()   // identity: fills canvas 1:1
             document.cropRect = nil
             cropAspect = .none
         }
@@ -1239,6 +1258,29 @@ struct MoveTransformInspector: View {
 
 /// Crop aspect choices in the Move/Transform inspector (v1 — centered, shrink-only).
 enum CropAspect: Hashable { case none, square, ratio16x9 }
+
+/// Renders a single-layer document masked to a normalized crop rect (origin top-left),
+/// yielding a full-canvas image that is transparent OUTSIDE the crop. Used to bake a
+/// per-layer crop (Apply Crop) without flattening the rest of the project.
+private struct CroppedLayerRender: View {
+    let document: IconDocument
+    let side: CGFloat
+    let crop: CGRect
+    var body: some View {
+        IconCompositeView(document: document, side: side)
+            .frame(width: side, height: side)
+            .mask {
+                ZStack {
+                    Color.clear
+                    Rectangle()
+                        .frame(width: crop.width * side, height: crop.height * side)
+                        .position(x: (crop.minX + crop.width / 2) * side,
+                                  y: (crop.minY + crop.height / 2) * side)
+                }
+                .frame(width: side, height: side)
+            }
+    }
+}
 
 /// A flat PNG of the icon, shareable via the native `ShareLink`. Holds already-rendered
 /// `Data` (Sendable); the render happens on the main actor before this is constructed.
