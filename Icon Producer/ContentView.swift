@@ -1090,8 +1090,12 @@ struct MoveTransformInspector: View {
     @ObservedObject var document: IconDocument
     let activeLayerID: IconLayer.ID?
 
-    @State private var cropAspect: CropAspect = .none
-    @State private var cropFraction: Double = 0.8
+    @State private var cropAspect: CropAspect = .original
+    @State private var cropSize: Double = 0.8       // limiting-dimension fraction for a locked ratio
+    @State private var freeWidth: Double = 0.8      // Freeform width fraction
+    @State private var freeHeight: Double = 0.8     // Freeform height fraction
+    @State private var customW: Int = 4             // Custom ratio width
+    @State private var customH: Int = 3             // Custom ratio height
     @State private var showCropConfirm = false
 
     private var index: Int? {
@@ -1119,20 +1123,23 @@ struct MoveTransformInspector: View {
         .onAppear(perform: syncCropStateFromDocument)
     }
 
-    // MARK: Crop (document-level, non-destructive, centered — v1)
+    // MARK: Crop (document-level, non-destructive, centered — Photos-style presets)
     @ViewBuilder private var cropSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Crop").font(.subheadline).bold()
             Text("Aspect ratio").font(.caption).foregroundStyle(.secondary)
             Picker("Aspect", selection: $cropAspect) {
-                Text("None").tag(CropAspect.none)
-                Text("Square").tag(CropAspect.square)
-                Text("16:9").tag(CropAspect.ratio16x9)
+                Text("Original").tag(CropAspect.original)
+                Text("Freeform").tag(CropAspect.freeform)
+                ForEach(CropAspect.presets, id: \.self) { preset in
+                    Text(preset.label).tag(preset)
+                }
+                Text("Custom").tag(CropAspect.custom)
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.menu)
             .labelsHidden()
-            if cropAspect != .none {
-                // Apply (destructive) sits a short space below the aspect choosers.
+            if cropAspect != .original {
+                // Apply (destructive) sits a short space below the aspect picker.
                 Button(role: .destructive) { showCropConfirm = true } label: {
                     Label("Apply Crop", systemImage: "crop")
                         .frame(maxWidth: .infinity)
@@ -1146,14 +1153,41 @@ struct MoveTransformInspector: View {
                     Text("Permanently crops the active layer to the selection. Other layers and the project are left intact. This can't be undone.")
                 }
 
-                Text("Crop size  \(Int(cropFraction * 100))%").font(.caption)
-                Slider(value: $cropFraction, in: 0.1...1.0)
+                cropSizeControls
+
                 Text("Live preview is non-destructive (Export/Share trim to it). Apply Crop bakes it into the active layer.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
         .onChange(of: cropAspect) { applyCrop() }
-        .onChange(of: cropFraction) { applyCrop() }
+        .onChange(of: cropSize) { applyCrop() }
+        .onChange(of: freeWidth) { applyCrop() }
+        .onChange(of: freeHeight) { applyCrop() }
+        .onChange(of: customW) { applyCrop() }
+        .onChange(of: customH) { applyCrop() }
+    }
+
+    /// Size controls vary by mode: one Size slider for a locked ratio, two sliders for
+    /// Freeform (independent W + H), and a W:H entry plus Size for Custom.
+    @ViewBuilder private var cropSizeControls: some View {
+        switch cropAspect {
+        case .freeform:
+            Text("Width  \(Int(freeWidth * 100))%").font(.caption)
+            Slider(value: $freeWidth, in: 0.1...1.0)
+            Text("Height  \(Int(freeHeight * 100))%").font(.caption)
+            Slider(value: $freeHeight, in: 0.1...1.0)
+        case .custom:
+            HStack {
+                Stepper("W \(customW)", value: $customW, in: 1...32)
+                Stepper("H \(customH)", value: $customH, in: 1...32)
+            }
+            .font(.caption)
+            Text("Crop size  \(Int(cropSize * 100))%").font(.caption)
+            Slider(value: $cropSize, in: 0.1...1.0)
+        default:
+            Text("Crop size  \(Int(cropSize * 100))%").font(.caption)
+            Slider(value: $cropSize, in: 0.1...1.0)
+        }
     }
 
     /// Destructive commit (v1.1): crop ONLY the active layer to the crop rect, keeping
@@ -1170,7 +1204,7 @@ struct MoveTransformInspector: View {
               case .content = document.layers[idx].role else {
             // No active content layer (e.g. a background is active): nothing to bake,
             // just clear the crop so the overlay goes away.
-            DispatchQueue.main.async { document.cropRect = nil; cropAspect = .none }
+            DispatchQueue.main.async { document.cropRect = nil; cropAspect = .original }
             return
         }
         let side = CGFloat(document.canvasSize)
@@ -1190,30 +1224,57 @@ struct MoveTransformInspector: View {
             document.layers[i].setImage(png)
             document.layers[i].transform = LayerTransform()   // identity: fills canvas 1:1
             document.cropRect = nil
-            cropAspect = .none
+            cropAspect = .original
         }
     }
 
-    /// Build a centered crop rect from the chosen aspect + size fraction (the crop's
-    /// WIDTH as a fraction of the canvas). nil aspect clears the crop.
+    /// Build a centered, normalized crop rect from the chosen aspect + size. Original
+    /// clears the crop; a locked ratio scales to fit by its limiting dimension;
+    /// Freeform uses independent W/H; Custom uses the W:H entry.
     private func applyCrop() {
         switch cropAspect {
-        case .none:
+        case .original:
             document.cropRect = nil
-        case .square:
-            let s = cropFraction
-            document.cropRect = CGRect(x: (1 - s) / 2, y: (1 - s) / 2, width: s, height: s)
-        case .ratio16x9:
-            let w = cropFraction, h = cropFraction * 9.0 / 16.0
-            document.cropRect = CGRect(x: (1 - w) / 2, y: (1 - h) / 2, width: w, height: h)
+        case .freeform:
+            document.cropRect = centeredRect(width: freeWidth, height: freeHeight)
+        case .custom:
+            document.cropRect = ratioRect(Double(customW), Double(customH), size: cropSize)
+        case .ratio(let w, let h):
+            document.cropRect = ratioRect(Double(w), Double(h), size: cropSize)
         }
     }
 
-    /// Reflect an existing saved crop back into the picker on open (best-effort).
+    /// A centered rect for a w:h ratio whose LIMITING dimension fills `size` of the
+    /// canvas — so it always fits inside the square (portrait + landscape both work).
+    private func ratioRect(_ w: Double, _ h: Double, size: Double) -> CGRect {
+        guard w > 0, h > 0 else { return centeredRect(width: size, height: size) }
+        let aspect = w / h
+        let width  = aspect >= 1 ? size : size * aspect
+        let height = aspect >= 1 ? size / aspect : size
+        return centeredRect(width: width, height: height)
+    }
+
+    private func centeredRect(width: Double, height: Double) -> CGRect {
+        CGRect(x: (1 - width) / 2, y: (1 - height) / 2, width: width, height: height)
+    }
+
+    /// Reflect an existing saved crop back into the picker on open (best-effort): match
+    /// a known preset by aspect if one fits, else fall back to Freeform (which can
+    /// represent any rect exactly).
     private func syncCropStateFromDocument() {
-        guard let r = document.cropRect else { cropAspect = .none; return }
-        cropFraction = max(0.1, min(1.0, r.width))
-        cropAspect = abs(r.width - r.height) < 0.001 ? .square : .ratio16x9
+        guard let r = document.cropRect, r.width > 0, r.height > 0 else { cropAspect = .original; return }
+        let aspect = r.width / r.height
+        if let preset = CropAspect.presets.first(where: { p in
+            guard case .ratio(let w, let h) = p else { return false }
+            return abs(Double(w) / Double(h) - aspect) < 0.02
+        }) {
+            cropAspect = preset
+            cropSize = max(0.1, min(1.0, max(r.width, r.height)))
+        } else {
+            cropAspect = .freeform
+            freeWidth = max(0.1, min(1.0, r.width))
+            freeHeight = max(0.1, min(1.0, r.height))
+        }
     }
 
     // MARK: Active-layer transform
@@ -1258,8 +1319,28 @@ struct MoveTransformInspector: View {
     }
 }
 
-/// Crop aspect choices in the Move/Transform inspector (v1 — centered, shrink-only).
-enum CropAspect: Hashable { case none, square, ratio16x9 }
+/// Crop aspect choices in the Move/Transform inspector (Photos-style presets).
+/// `ratio(w:h:)` covers Square (1:1) and every fixed preset; Freeform = independent
+/// W/H; Custom = a user-entered W:H; Original = no crop.
+enum CropAspect: Hashable {
+    case original, freeform, custom
+    case ratio(w: Int, h: Int)
+
+    /// Fixed presets in Photos' order (Square first), shown between Freeform and Custom.
+    static let presets: [CropAspect] = [
+        .ratio(w: 1, h: 1), .ratio(w: 16, h: 9), .ratio(w: 4, h: 5), .ratio(w: 5, h: 7),
+        .ratio(w: 4, h: 3), .ratio(w: 3, h: 5), .ratio(w: 3, h: 2),
+    ]
+
+    var label: String {
+        switch self {
+        case .original: "Original"
+        case .freeform: "Freeform"
+        case .custom:   "Custom"
+        case .ratio(let w, let h): w == h ? "Square" : "\(w):\(h)"
+        }
+    }
+}
 
 /// Renders a single-layer document masked to a normalized crop rect (origin top-left),
 /// yielding a full-canvas image that is transparent OUTSIDE the crop. Used to bake a
