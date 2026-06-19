@@ -43,8 +43,6 @@ struct ContentView: View {
     @State private var exportBundle: IconExportBundle?
     @State private var showExporter = false
     /// Share (roadmap 2.5): a flat 1024 PNG of the visible layers, snapshot at tap.
-    @State private var shareURL: URL?
-    @State private var showShare = false
     /// About / wordmark sheet — shows the "Pictorial Producer / Graphic Arts" brand inside the app
     /// (the home-screen + App Store name can't carry the subheading).
     @State private var showAbout = false
@@ -169,7 +167,9 @@ struct ContentView: View {
                 .help("Export the icon as a folder of PNG sizes")
             }
             ToolbarItem(placement: .secondaryAction) {
-                Button { prepareShare() } label: {
+                // Native ShareLink (replaces the old render→custom-sheet path that came
+                // up empty). Shares a flat PNG of the visible layers (crop-trimmed).
+                ShareLink(item: shareItem, preview: SharePreview(exportFilename)) {
                     Label("Share", systemImage: "square.and.arrow.up")
                 }
                 .help("Share a flat PNG of the visible layers")
@@ -186,40 +186,18 @@ struct ContentView: View {
                       contentType: .folder,
                       defaultFilename: exportFilename) { _ in }
         .sheet(isPresented: $showAbout) { AboutView() }
-        .sheet(isPresented: $showShare) {
-            if let url = shareURL {
-                #if canImport(UIKit)
-                ActivityView(items: [url])
-                #else
-                VStack(spacing: 16) {
-                    ShareLink(item: url) { Label("Share Icon", systemImage: "square.and.arrow.up") }
-                    Button("Done") { showShare = false }
-                }
-                .padding(40)
-                #endif
-            }
-        }
         .environmentObject(pen)
-    }
-
-    /// Render a flat 1024 PNG of the visible layers NOW and present the share sheet.
-    private func prepareShare() {
-        guard let data = ContentView.renderIconPNG(document: document, px: 1024) else { return }
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent(exportFilename)
-            .appendingPathExtension("png")
-        do {
-            try data.write(to: url)
-            shareURL = url
-            showShare = true
-        } catch {
-            // Fail-safe: surface nothing destructive; just don't present a broken share.
-        }
     }
 
     private var exportFilename: String {
         let base = document.name.trimmingCharacters(in: .whitespaces)
         return (base.isEmpty ? "Untitled Icon" : base) + " AppIcon"
+    }
+
+    /// On-demand flat PNG of the visible layers (crop-trimmed) for the native ShareLink.
+    private var shareItem: IconShare {
+        IconShare(pngData: ContentView.renderIconPNG(document: document, px: 1024) ?? Data(),
+                  filename: exportFilename)
     }
 
     /// Render every required size to PNG and present the folder exporter (roadmap 2.3).
@@ -1246,6 +1224,17 @@ struct MoveTransformInspector: View {
 
 /// Crop aspect choices in the Move/Transform inspector (v1 — centered, shrink-only).
 enum CropAspect: Hashable { case none, square, ratio16x9 }
+
+/// A flat PNG of the icon, shareable via the native `ShareLink`. Holds already-rendered
+/// `Data` (Sendable); the render happens on the main actor before this is constructed.
+struct IconShare: Transferable {
+    let pngData: Data
+    let filename: String
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .png) { $0.pngData }
+            .suggestedFileName { $0.filename + ".png" }
+    }
+}
 
 // MARK: - Canvas
 
