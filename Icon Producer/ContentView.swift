@@ -1123,12 +1123,14 @@ struct MoveTransformInspector: View {
     @ViewBuilder private var cropSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Crop").font(.subheadline).bold()
+            Text("Aspect ratio").font(.caption).foregroundStyle(.secondary)
             Picker("Aspect", selection: $cropAspect) {
                 Text("None").tag(CropAspect.none)
                 Text("Square").tag(CropAspect.square)
                 Text("16:9").tag(CropAspect.ratio16x9)
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             if cropAspect != .none {
                 // Apply (destructive) sits a short space below the aspect choosers.
                 Button(role: .destructive) { showCropConfirm = true } label: {
