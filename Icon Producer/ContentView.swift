@@ -1192,33 +1192,43 @@ struct MoveTransformInspector: View {
 
     // MARK: Active-layer transform
     @ViewBuilder private func layerControls(_ idx: Int) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Scale  \(Int(document.layers[idx].transform.scale * 100))%")
-                    .font(.subheadline)
-                Slider(value: transformBinding(\.scale, idx), in: 0.1...4.0)
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Rotation  \(Int(document.layers[idx].transform.rotationDegrees))°")
-                    .font(.subheadline)
-                Slider(value: transformBinding(\.rotationDegrees, idx), in: -180...180)
-            }
-            HStack {
-                Button("Center") {
-                    document.layers[idx].transform.center = CGPoint(x: 0.5, y: 0.5)
+        // Bounds-guard the whole section: the active layer can be removed (e.g. Apply
+        // Crop collapses the stack) while a stale `idx` is still in flight.
+        if document.layers.indices.contains(idx) {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Scale  \(Int(document.layers[idx].transform.scale * 100))%")
+                        .font(.subheadline)
+                    Slider(value: transformBinding(\.scale, idx), in: 0.1...4.0)
                 }
-                Button("Reset") {
-                    document.layers[idx].transform = LayerTransform()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Rotation  \(Int(document.layers[idx].transform.rotationDegrees))°")
+                        .font(.subheadline)
+                    Slider(value: transformBinding(\.rotationDegrees, idx), in: -180...180)
                 }
+                HStack {
+                    Button("Center") {
+                        guard document.layers.indices.contains(idx) else { return }
+                        document.layers[idx].transform.center = CGPoint(x: 0.5, y: 0.5)
+                    }
+                    Button("Reset") {
+                        guard document.layers.indices.contains(idx) else { return }
+                        document.layers[idx].transform = LayerTransform()
+                    }
+                }
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.bordered)
         }
     }
 
+    /// Bounds-safe so a slider that fires after its layer was removed can't crash.
     private func transformBinding<V>(_ keyPath: WritableKeyPath<LayerTransform, V>,
                                      _ idx: Int) -> Binding<V> {
-        Binding(get: { document.layers[idx].transform[keyPath: keyPath] },
-                set: { document.layers[idx].transform[keyPath: keyPath] = $0 })
+        Binding(get: { document.layers.indices.contains(idx)
+                        ? document.layers[idx].transform[keyPath: keyPath]
+                        : LayerTransform()[keyPath: keyPath] },
+                set: { if document.layers.indices.contains(idx) {
+                        document.layers[idx].transform[keyPath: keyPath] = $0 } })
     }
 }
 
