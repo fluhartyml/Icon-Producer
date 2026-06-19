@@ -42,6 +42,12 @@ final class IconDocument: ObservableObject {
     /// The 8-slot brand palette (hex), saved WITH the document so it travels per-project.
     @Published var palette: [String]
 
+    /// Optional crop region — a normalized rectangle (0…1, origin top-left) in canvas
+    /// space marking the KEPT area. `nil` = no crop (full square). Non-destructive:
+    /// stored here and applied at export/share; the source layers are never trimmed.
+    /// A smaller rectangle fits inside the square canvas, so this needs no canvas resize.
+    @Published var cropRect: CGRect?
+
     /// Crayon-box defaults — used for a new doc, or one saved before palettes existed.
     static let defaultPalette = ["#000000", "#FFFFFF", "#FF3B30", "#FF9500",
                                  "#FFCC00", "#34C759", "#007AFF", "#AF52DE"]
@@ -54,11 +60,12 @@ final class IconDocument: ObservableObject {
     }
 
     init(name: String = "Untitled Icon", canvasSize: Int = 1024, layers: [IconLayer] = [],
-         palette: [String] = IconDocument.lastUsedPalette) {
+         palette: [String] = IconDocument.lastUsedPalette, cropRect: CGRect? = nil) {
         self.name = name
         self.canvasSize = canvasSize
         self.layers = layers
         self.palette = palette
+        self.cropRect = cropRect
     }
 
     /// A brand-new icon's default stack: Light Background, Dark Background, Icon —
@@ -341,6 +348,8 @@ struct IconProjectManifest: Codable {
     var layers: [IconLayer]
     /// Optional for backward-compat with .iconproj files saved before palettes existed.
     var palette: [String]?
+    /// Optional crop region (normalized); absent in files saved before crop existed.
+    var cropRect: CGRect?
 }
 
 extension IconDocument: ReferenceFileDocument {
@@ -353,12 +362,13 @@ extension IconDocument: ReferenceFileDocument {
         }
         let manifest = try JSONDecoder().decode(IconProjectManifest.self, from: data)
         self.init(name: manifest.name, canvasSize: manifest.canvasSize, layers: manifest.layers,
-                  palette: manifest.palette ?? IconDocument.lastUsedPalette)
+                  palette: manifest.palette ?? IconDocument.lastUsedPalette, cropRect: manifest.cropRect)
     }
 
     /// Capture current state for writing (called off the main actor by SwiftUI).
     func snapshot(contentType: UTType) throws -> IconProjectManifest {
-        IconProjectManifest(name: name, canvasSize: canvasSize, layers: layers, palette: palette)
+        IconProjectManifest(name: name, canvasSize: canvasSize, layers: layers, palette: palette,
+                            cropRect: cropRect)
     }
 
     /// Write the package: a directory wrapper holding `manifest.json`.
@@ -382,7 +392,7 @@ extension IconDocument {
     /// as the official `fileWrapper(snapshot:)` writer, so the file stays interchangeable.
     func writePackage(to url: URL) throws {
         let manifest = IconProjectManifest(name: name, canvasSize: canvasSize,
-                                           layers: layers, palette: palette)
+                                           layers: layers, palette: palette, cropRect: cropRect)
         let data = try JSONEncoder().encode(manifest)
         let mf = FileWrapper(regularFileWithContents: data)
         mf.preferredFilename = "manifest.json"

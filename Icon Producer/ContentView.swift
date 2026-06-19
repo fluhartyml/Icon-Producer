@@ -244,6 +244,15 @@ struct ContentView: View {
         let renderer = ImageRenderer(content: IconCompositeView(document: document, side: CGFloat(px)))
         renderer.scale = 1
         guard let cg = renderer.cgImage else { return nil }
+        // Non-destructive crop: render the full square, then trim the CGImage to the
+        // normalized crop rect (origin top-left, matching the canvas convention). A
+        // non-square crop yields a rectangular PNG; nil = full square as before.
+        if let crop = document.cropRect {
+            let w = CGFloat(cg.width), h = CGFloat(cg.height)
+            let rect = CGRect(x: crop.minX * w, y: crop.minY * h,
+                              width: crop.width * w, height: crop.height * h).integral
+            if let cropped = cg.cropping(to: rect) { return pngData(from: cropped) }
+        }
         return pngData(from: cg)
     }
 
@@ -1097,11 +1106,14 @@ struct PanelPlaceholder: View {
 
 // MARK: - Move / Transform inspector
 
-/// Tool #1's inspector: scale / rotation / center / reset on the ACTIVE layer's
-/// transform. (Drag-to-move lives on the canvas box; handles + flip are later.)
+/// Tool #1's inspector: a document-level CROP section (aspect + size, non-destructive,
+/// shrink-only — v1) plus scale / rotation / center / reset on the ACTIVE layer.
 struct MoveTransformInspector: View {
     @ObservedObject var document: IconDocument
     let activeLayerID: IconLayer.ID?
+
+    @State private var cropAspect: CropAspect = .none
+    @State private var cropFraction: Double = 0.8
 
     private var index: Int? {
         guard let id = activeLayerID else { return nil }
@@ -1109,38 +1121,90 @@ struct MoveTransformInspector: View {
     }
 
     var body: some View {
-        if let idx = index {
+        ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Scale  \(Int(document.layers[idx].transform.scale * 100))%")
-                        .font(.subheadline)
-                    Slider(value: transformBinding(\.scale, idx), in: 0.1...4.0)
+                cropSection
+                Divider()
+                if let idx = index {
+                    layerControls(idx)
+                } else {
+                    PanelPlaceholder(systemImage: "hand.tap",
+                                     title: "Move / Transform",
+                                     subtitle: "Tap a layer to select it, then drag it on the canvas")
+                        .frame(maxWidth: .infinity, minHeight: 150)
                 }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Rotation  \(Int(document.layers[idx].transform.rotationDegrees))°")
-                        .font(.subheadline)
-                    Slider(value: transformBinding(\.rotationDegrees, idx), in: -180...180)
-                }
-
-                HStack {
-                    Button("Center") {
-                        document.layers[idx].transform.center = CGPoint(x: 0.5, y: 0.5)
-                    }
-                    Button("Reset") {
-                        document.layers[idx].transform = LayerTransform()
-                    }
-                }
-                .buttonStyle(.bordered)
-
-                Spacer()
             }
             .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        } else {
-            PanelPlaceholder(systemImage: "hand.tap",
-                             title: "Move / Transform",
-                             subtitle: "Tap a layer to select it, then drag it on the canvas")
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .onAppear(perform: syncCropStateFromDocument)
+    }
+
+    // MARK: Crop (document-level, non-destructive, centered — v1)
+    @ViewBuilder private var cropSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Crop").font(.subheadline).bold()
+            Picker("Aspect", selection: $cropAspect) {
+                Text("None").tag(CropAspect.none)
+                Text("Square").tag(CropAspect.square)
+                Text("16:9").tag(CropAspect.ratio16x9)
+            }
+            .pickerStyle(.segmented)
+            if cropAspect != .none {
+                Text("Crop size  \(Int(cropFraction * 100))%").font(.caption)
+                Slider(value: $cropFraction, in: 0.1...1.0)
+                Text("Trims the exported/shared image to the highlighted area. Non-destructive — your layers are untouched.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+        .onChange(of: cropAspect) { applyCrop() }
+        .onChange(of: cropFraction) { applyCrop() }
+    }
+
+    /// Build a centered crop rect from the chosen aspect + size fraction (the crop's
+    /// WIDTH as a fraction of the canvas). nil aspect clears the crop.
+    private func applyCrop() {
+        switch cropAspect {
+        case .none:
+            document.cropRect = nil
+        case .square:
+            let s = cropFraction
+            document.cropRect = CGRect(x: (1 - s) / 2, y: (1 - s) / 2, width: s, height: s)
+        case .ratio16x9:
+            let w = cropFraction, h = cropFraction * 9.0 / 16.0
+            document.cropRect = CGRect(x: (1 - w) / 2, y: (1 - h) / 2, width: w, height: h)
+        }
+    }
+
+    /// Reflect an existing saved crop back into the picker on open (best-effort).
+    private func syncCropStateFromDocument() {
+        guard let r = document.cropRect else { cropAspect = .none; return }
+        cropFraction = max(0.1, min(1.0, r.width))
+        cropAspect = abs(r.width - r.height) < 0.001 ? .square : .ratio16x9
+    }
+
+    // MARK: Active-layer transform
+    @ViewBuilder private func layerControls(_ idx: Int) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Scale  \(Int(document.layers[idx].transform.scale * 100))%")
+                    .font(.subheadline)
+                Slider(value: transformBinding(\.scale, idx), in: 0.1...4.0)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Rotation  \(Int(document.layers[idx].transform.rotationDegrees))°")
+                    .font(.subheadline)
+                Slider(value: transformBinding(\.rotationDegrees, idx), in: -180...180)
+            }
+            HStack {
+                Button("Center") {
+                    document.layers[idx].transform.center = CGPoint(x: 0.5, y: 0.5)
+                }
+                Button("Reset") {
+                    document.layers[idx].transform = LayerTransform()
+                }
+            }
+            .buttonStyle(.bordered)
         }
     }
 
@@ -1150,6 +1214,9 @@ struct MoveTransformInspector: View {
                 set: { document.layers[idx].transform[keyPath: keyPath] = $0 })
     }
 }
+
+/// Crop aspect choices in the Move/Transform inspector (v1 — centered, shrink-only).
+enum CropAspect: Hashable { case none, square, ratio16x9 }
 
 // MARK: - Canvas
 
@@ -1256,6 +1323,11 @@ struct CanvasView: View {
                 }
                 if showTransformBox, let idx = activeIndex {
                     TransformBox(document: document, index: idx, side: side)
+                }
+                // Crop preview: dim everything outside the crop rect (Move tool only).
+                if activeTool == .move, let crop = document.cropRect {
+                    CropOverlay(crop: crop, side: side)
+                        .allowsHitTesting(false)
                 }
             }
             .frame(width: side, height: side)
@@ -1456,6 +1528,33 @@ struct TransformBox: View {
                     )
             }
         }
+    }
+}
+
+/// Dims the canvas outside the crop rectangle (Photos-style) so you can see what
+/// export/share will keep. Visual only in v1 — the crop is sized from the inspector's
+/// aspect picker + size slider (draggable handles for Freeform = later).
+struct CropOverlay: View {
+    let crop: CGRect    // normalized (0…1, top-left origin)
+    let side: CGFloat
+
+    var body: some View {
+        let r = CGRect(x: crop.minX * side, y: crop.minY * side,
+                       width: crop.width * side, height: crop.height * side)
+        let dim = Color.black.opacity(0.45)
+        ZStack(alignment: .topLeading) {
+            dim.frame(width: side, height: max(0, r.minY))                         // top band
+            dim.frame(width: side, height: max(0, side - r.maxY))                  // bottom band
+                .offset(y: r.maxY)
+            dim.frame(width: max(0, r.minX), height: r.height)                     // left band
+                .offset(y: r.minY)
+            dim.frame(width: max(0, side - r.maxX), height: r.height)              // right band
+                .offset(x: r.maxX, y: r.minY)
+            Rectangle().stroke(Color.white, lineWidth: 1.5)                        // crop border
+                .frame(width: r.width, height: r.height)
+                .offset(x: r.minX, y: r.minY)
+        }
+        .frame(width: side, height: side, alignment: .topLeading)
     }
 }
 
